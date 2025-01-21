@@ -1,0 +1,20 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+#
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: graph/src/parser/json_utils
+
+  - repo: https://github.com/biomejs/pre-commit
+    rev: "v0.4.0" # Use the sha / tag you want to point at
+    hooks:
+      - id: biome-format
+        files: "\\.(jsx?|tsx?|c(js|ts)|m(js|ts)|d\\.(ts|cts|mts)|jsonc?|css|vue|astro)$"
+        additional_dependencies: ["@biomejs/biome@1.8.3"]
