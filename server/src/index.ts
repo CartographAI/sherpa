@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
+import { Host, createHost } from "./host";
 
 const app = new Hono();
 app.use("*", logger());
@@ -54,13 +55,12 @@ app.get("/api/events", (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { userPrompt, model = "claude" } = await c.req.json();
-  // const host = await createHost(model);
-  // llmHost = host;
+  const { userPrompt } = await c.req.json();
+  const host = await createHost();
   await sendMessageToClient({ id: uuid(), role: "user", content: userPrompt });
 
   try {
-    // await llmHost.processQuery({ userPrompt, onStepComplete: updateStep });
+    await host.processQuery({ userPrompt, onStepComplete: console.log });
     await sendMessageToClient({ id: uuid(), role: "assistant", content: "Hardcoded assistant message" });
 
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
