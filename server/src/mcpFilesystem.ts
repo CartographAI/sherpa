@@ -1,0 +1,244 @@
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
+
+import { TreeGenerator } from "./tree";
+
+// Normalize all paths consistently
+function normalizePath(p: string): string {
+  return path.normalize(p);
+}
+
+function expandHome(filepath: string): string {
+  if (filepath.startsWith("~/") || filepath === "~") {
+    return path.join(os.homedir(), filepath.slice(1));
+  }
+  return filepath;
+}
+
+// Security utilities
+async function validatePath(requestedPath: string, normalizedAllowedDirectories: string[]): Promise<string> {
+  const expandedPath = expandHome(requestedPath);
+  const absolute = path.isAbsolute(expandedPath)
+    ? path.resolve(expandedPath)
+    : path.resolve(process.cwd(), expandedPath);
+
+  const normalizedRequested = normalizePath(absolute);
+
+  // Check if path is within allowed directories
+  const isAllowed = normalizedAllowedDirectories.some((dir) => normalizedRequested.startsWith(dir));
+  if (!isAllowed) {
+    throw new Error(
+      `Access denied - path outside allowed directories: ${absolute} not in ${normalizedAllowedDirectories.join(", ")}`,
+    );
+  }
+
+  // Handle symlinks by checking their real path
+  try {
+    const realPath = await fs.realpath(absolute);
+    const normalizedReal = normalizePath(realPath);
+    const isRealPathAllowed = normalizedAllowedDirectories.some((dir) => normalizedReal.startsWith(dir));
+    if (!isRealPathAllowed) {
+      throw new Error("Access denied - symlink target outside allowed directories");
+    }
+    return realPath;
+  } catch (error) {
+    // For new files that don't exist yet, verify parent directory
+    const parentDir = path.dirname(absolute);
+    try {
+      const realParentPath = await fs.realpath(parentDir);
+      const normalizedParent = normalizePath(realParentPath);
+      const isParentAllowed = normalizedAllowedDirectories.some((dir) => normalizedParent.startsWith(dir));
+      if (!isParentAllowed) {
+        throw new Error("Access denied - parent directory outside allowed directories");
+      }
+      return absolute;
+    } catch {
+      throw new Error(`Parent directory does not exist: ${parentDir}`);
+    }
+  }
+}
+
+// Schema definitions
+const ReadFilesArgsSchema = z.object({
+  paths: z.array(z.string()),
+});
+
+const ListDirectoryArgsSchema = z.object({
+  path: z.string(),
+});
+
+const TreeArgsSchema = z.object({
+  path: z.string(),
+  maxDepth: z.number().optional(),
+});
+
+const ToolInputSchema = ToolSchema.shape.inputSchema;
+type ToolInput = z.infer<typeof ToolInputSchema>;
+
+// Start server
+export async function createServer(allowedDirectories: string[]) {
+  // Validate that all directories exist and are accessible
+  await Promise.all(
+    allowedDirectories.map(async (dir) => {
+      try {
+        const stats = await fs.stat(dir);
+        if (!stats.isDirectory()) {
+          console.error(`Error: ${dir} is not a directory`);
+          process.exit(1);
+        }
+      } catch (error) {
+        console.error(`Error accessing directory ${dir}:`, error);
+        process.exit(1);
+      }
+    }),
+  );
+  // Store allowed directories in normalized form
+  const normalizedAllowedDirectories = allowedDirectories.map((dir) => normalizePath(path.resolve(expandHome(dir))));
+
+  // Server setup
+  const server = new Server(
+    {
+      name: "secure-filesystem-server",
+      version: "0.2.0",
+    },
+    {
+      capabilities: {
+        tools: {},
+      },
+    },
+  );
+
+  // Tool handlers
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+      tools: [
+        {
+          name: "read_files",
+          description:
+            "Read the contents of multiple files simultaneously. This is more " +
+            "efficient than reading files one by one when you need to analyze " +
+            "or compare multiple files. Each file's content is returned with its " +
+            "path as a reference. Failed reads for individual files won't stop " +
+            "the entire operation. Only works within allowed directories.",
+          inputSchema: zodToJsonSchema(ReadFilesArgsSchema) as ToolInput,
+        },
+        {
+          name: "list_directory",
+          description:
+            "Get a detailed listing of all files and directories in a specified path. " +
+            "Results clearly distinguish between files and directories with [FILE] and [DIR] " +
+            "prefixes. This tool is essential for understanding directory structure and " +
+            "finding specific files within a directory. Only works within allowed directories.",
+          inputSchema: zodToJsonSchema(ListDirectoryArgsSchema) as ToolInput,
+        },
+        {
+          name: "tree",
+          description:
+            "Generate a tree-style visualization of a directory structure. " +
+            "Shows the hierarchy of files and directories in a readable format. " +
+            "Optionally specify maxDepth to limit the depth of the tree. " +
+            "Only works within allowed directories.",
+          inputSchema: zodToJsonSchema(TreeArgsSchema) as ToolInput,
+        },
+        {
+          name: "list_allowed_directories",
+          description:
+            "Returns the list of directories that this server is allowed to access. " +
+            "Use this to understand which directories are available before trying to access files.",
+          inputSchema: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      ],
+    };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    try {
+      const { name, arguments: args } = request.params;
+
+      switch (name) {
+        case "read_files": {
+          const parsed = ReadFilesArgsSchema.safeParse(args);
+          if (!parsed.success) {
+            throw new Error(`Invalid arguments for read_files: ${parsed.error}`);
+          }
+          const results = await Promise.all(
+            parsed.data.paths.map(async (filePath: string) => {
+              try {
+                const validPath = await validatePath(filePath, normalizedAllowedDirectories);
+                const content = await fs.readFile(validPath, "utf-8");
+                return `${filePath}:\n${content}\n`;
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                return `${filePath}: Error - ${errorMessage}`;
+              }
+            }),
+          );
+          return {
+            content: [{ type: "text", text: results.join("\n---\n") }],
+          };
+        }
+        case "list_directory": {
+          const parsed = ListDirectoryArgsSchema.safeParse(args);
+          if (!parsed.success) {
+            throw new Error(`Invalid arguments for list_directory: ${parsed.error}`);
+          }
+          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectories);
+          const entries = await fs.readdir(validPath, { withFileTypes: true });
+          const formatted = entries
+            .map((entry) => `${entry.isDirectory() ? "[DIR]" : "[FILE]"} ${entry.name}`)
+            .join("\n");
+          return {
+            content: [{ type: "text", text: formatted }],
+          };
+        }
+        case "tree": {
+          const parsed = TreeArgsSchema.safeParse(args);
+          if (!parsed.success) {
+            throw new Error(`Invalid arguments for tree: ${parsed.error}`);
+          }
+          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectories);
+          const tree = new TreeGenerator({
+            maxDepth: parsed.data.maxDepth,
+          });
+          const treeOutput = tree.generate(validPath);
+          return {
+            content: [{ type: "text", text: treeOutput }],
+          };
+        }
+        case "list_allowed_directories": {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Allowed directories:\n${normalizedAllowedDirectories.join("\n")}`,
+              },
+            ],
+          };
+        }
+
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: "text", text: `Error: ${errorMessage}` }],
+        isError: true,
+      };
+    }
+  });
+
+  console.error("Secure MCP Filesystem Server running on local transport");
+  console.error("Allowed directories:", normalizedAllowedDirectories);
+
+  return server;
+}
