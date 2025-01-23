@@ -8,8 +8,6 @@ import {
   type LanguageModelV1,
   type ToolResultPart,
 } from "ai";
-import { stdin as input, stdout as output } from "node:process";
-import * as readline from "node:readline/promises";
 import type { BaseClient } from "./baseClient";
 
 import { createFilesystemClient } from "./filesystemClient";
@@ -52,7 +50,7 @@ export class Host {
     systemPrompt,
     userPrompt,
     onStepComplete,
-  }: { systemPrompt?: string; userPrompt: string; onStepComplete?: (message: CoreMessage) => void }): Promise<string> {
+  }: { systemPrompt?: string; userPrompt: string; onStepComplete: (message: CoreMessage) => void }): Promise<string> {
     if (this.clients.length === 0) {
       throw new Error("No clients connected.");
     }
@@ -79,7 +77,7 @@ export class Host {
 
       // Add assistant message(s) to the conversation
       currentMessages.push(...assistantMessages);
-      if (onStepComplete) assistantMessages.forEach(onStepComplete);
+      assistantMessages.forEach(onStepComplete);
 
       // Add the model's text response to finalText
       if (response.text) {
@@ -116,7 +114,7 @@ export class Host {
         };
         console.log("toolMessage :>>", toolMessage);
         currentMessages.push(toolMessage);
-        if (onStepComplete) onStepComplete(toolMessage);
+        onStepComplete(toolMessage);
       } else {
         break; // Exit loop if no tool calls
       }
@@ -124,28 +122,6 @@ export class Host {
 
     console.log("all messages :>>", currentMessages);
     return finalText.join("\n");
-  }
-
-  async chatLoop(): Promise<void> {
-    const rl = readline.createInterface({ input, output });
-
-    console.log("\nMCP Client Started!");
-    console.log("Type your queries or 'quit' to exit.");
-
-    while (true) {
-      try {
-        const query = await rl.question("\nQuery: ");
-        if (query.toLowerCase() === "quit") {
-          break;
-        }
-        const response = await this.processQuery({ userPrompt: query });
-        console.log("\n" + response);
-      } catch (e: any) {
-        console.error(`\nError: ${e.message}`);
-      }
-    }
-
-    rl.close();
   }
 
   async cleanup(): Promise<void> {

@@ -5,12 +5,13 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea";
+  import { type CoreMessage } from "ai";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
 
-  let chatMessages: string[] = $state([]);
+  let chatMessages: CoreMessage[] = $state([]);
   let isLoading: boolean = $state(false);
   let inputMessage: string = $state("");
   let anthropicApiKey: string = $state("");
@@ -22,8 +23,8 @@
 
     eventSource.onmessage = (event) => {
       console.log("received sse message:", event);
-      const eventData = JSON.parse(event.data);
-      chatMessages.push(`${eventData.role}: ${eventData.content}`);
+      const eventData = JSON.parse(event.data) as CoreMessage;
+      chatMessages.push(eventData);
     };
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);
@@ -67,7 +68,8 @@
         <ScrollArea class="flex-grow p-4">
           {#each chatMessages as message, index (index)}
             <div class="mb-4 p-2 bg-secondary rounded-lg">
-              {message}
+              <p>{message.role}:</p>
+              {JSON.stringify(message.content)}
             </div>
           {/each}
         </ScrollArea>

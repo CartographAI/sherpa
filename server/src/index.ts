@@ -1,3 +1,4 @@
+import { CoreMessage } from "ai";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
@@ -15,11 +16,10 @@ app.get("/api/health", (c) => c.json({ ok: true }));
 const clients: Record<string, { stream: SSEStreamingApi }> = {};
 const clientId = "1"; // Assume we only ever have 1 client for now
 
-async function sendMessageToClient(data: any) {
+async function sendMessageToClient(data: CoreMessage) {
   await clients[clientId].stream.writeSSE({
     data: JSON.stringify(data),
     event: "message",
-    id: data.id,
   });
 }
 
@@ -58,12 +58,10 @@ app.get("/api/events", (c) => {
 app.post("/api/chat", async (c) => {
   const { userPrompt, model, apiKey } = await c.req.json();
   const host = await createHost({ model, apiKey });
-  await sendMessageToClient({ id: uuid(), role: "user", content: userPrompt });
+  await sendMessageToClient({ role: "user", content: userPrompt });
 
   try {
-    await host.processQuery({ userPrompt, onStepComplete: console.log });
-    await sendMessageToClient({ id: uuid(), role: "assistant", content: "Hardcoded assistant message" });
-
+    await host.processQuery({ userPrompt, onStepComplete: sendMessageToClient });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
     console.error("Error processing query:", error);
