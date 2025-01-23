@@ -1,9 +1,12 @@
+#!/usr/bin/env node
+
 import { CoreMessage } from "ai";
 import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
+import { serve } from "@hono/node-server";
 import { createHost } from "./host";
 
 const app = new Hono();
@@ -78,4 +81,7 @@ app.use(
 app.get("/favicon.png", serveStatic({ path: "./dist/web/favicon.png" }));
 app.get("/", serveStatic({ path: "./dist/web/index.html" }));
 
-export default { ...app, idleTimeout: 60, port: 3031 };
+serve({
+  fetch: app.fetch,
+  port: 3031,
+});
