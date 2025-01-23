@@ -1,3 +1,4 @@
+import { createAnthropic } from "@ai-sdk/anthropic";
 import {
   generateText,
   jsonSchema,
@@ -7,16 +8,16 @@ import {
   type LanguageModelV1,
   type ToolResultPart,
 } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { stdin as input, stdout as output } from "node:process";
 import * as readline from "node:readline/promises";
 import type { BaseClient } from "./baseClient";
 
 import { createFilesystemClient } from "./filesystemClient";
 
-export async function createHost() {
-  const model = anthropic("claude-3-5-sonnet-20241022");
-  const host = new Host(model);
+export async function createHost({ model, apiKey }: { model: string; apiKey: string }) {
+  const anthropic = createAnthropic({ apiKey });
+  const languageModel = anthropic(model);
+  const host = new Host(languageModel);
   await host.createClientsServers();
   return host;
 }

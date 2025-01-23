@@ -6,12 +6,15 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
 
   let chatMessages: string[] = $state([]);
   let isLoading: boolean = $state(false);
   let inputMessage: string = $state("");
+  let anthropicApiKey: string = $state("");
+  let geminiApiKey: string = $state("");
 
   onMount(() => {
     console.log("creating event source");
@@ -41,15 +44,18 @@
   async function sendMessage() {
     isLoading = true;
 
-    const requestBody = { userPrompt: inputMessage };
+    const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: anthropicApiKey };
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
     });
+    isLoading = false;
     if (response.status === 202) {
-      isLoading = false;
       inputMessage = "";
+    } else {
+      const resJson = await response.json();
+      toast.error("An error occurred: " + resJson.message, { position: "top-center" });
     }
   }
 </script>
@@ -98,7 +104,7 @@
                 class="underline">https://console.anthropic.com/settings/keys</a
               >
             </p>
-            <Input type="text" id="anthropic" placeholder="sk-ant-xxxxxxx" />
+            <Input type="text" id="anthropic" placeholder="sk-ant-xxxxxxx" bind:value={anthropicApiKey} />
           </div>
           <div class="flex w-full flex-col gap-1.5">
             <Label for="gemini">Google Gemini</Label>
@@ -107,7 +113,7 @@
                 >https://aistudio.google.com/app/apikey</a
               >
             </p>
-            <Input type="text" id="gemini" placeholder="AIzaxxxxxxx" />
+            <Input type="text" id="gemini" placeholder="AIzaxxxxxxx" bind:value={geminiApiKey} />
           </div>
           <div class="flex justify-end">
             <Button type="submit">Save</Button>

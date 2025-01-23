@@ -56,8 +56,8 @@ app.get("/api/events", (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { userPrompt } = await c.req.json();
-  const host = await createHost();
+  const { userPrompt, model, apiKey } = await c.req.json();
+  const host = await createHost({ model, apiKey });
   await sendMessageToClient({ id: uuid(), role: "user", content: userPrompt });
 
   try {
@@ -67,8 +67,7 @@ app.post("/api/chat", async (c) => {
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
     console.error("Error processing query:", error);
-    await sendMessageToClient({ id: uuid(), role: "assistant", content: "Error: " + (error as any).message });
-    return c.json({ status: "error", message: (error as any).message }, 500);
+    return c.json({ status: "error", message: (error as any).message }, 400);
   }
 });
 
