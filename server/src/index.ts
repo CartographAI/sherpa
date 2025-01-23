@@ -1,8 +1,9 @@
 import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
-import { Host, createHost } from "./host";
+import { createHost } from "./host";
 
 const app = new Hono();
 app.use("*", logger());
@@ -70,5 +71,14 @@ app.post("/api/chat", async (c) => {
     return c.json({ status: "error", message: (error as any).message }, 500);
   }
 });
+
+app.use(
+  "/_app/*",
+  serveStatic({
+    root: "./dist/web",
+  }),
+);
+app.get("/favicon.png", serveStatic({ path: "./dist/web/favicon.png" }));
+app.get("/", serveStatic({ path: "./dist/web/index.html" }));
 
 export default { ...app, idleTimeout: 60, port: 3031 };
