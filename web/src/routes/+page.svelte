@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
+  import { Input } from "$lib/components/ui/input";
+  import { Label } from "$lib/components/ui/label";
   import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea";
   import { onMount } from "svelte";
 
@@ -51,21 +54,68 @@
   }
 </script>
 
-<div class="flex h-screen">
-  <div class="w-1/2 flex-1 max-w-3xl mx-auto flex flex-col">
-    <ScrollArea class="flex-grow p-4">
-      {#each chatMessages as message, index (index)}
-        <div class="mb-4 p-2 bg-secondary rounded-lg">
-          {message}
-        </div>
-      {/each}
-    </ScrollArea>
+<Sidebar.Provider style="--sidebar-width: 500px">
+  <Sidebar.Inset>
+    <div class="flex h-screen">
+      <div class="w-1/2 flex-1 max-w-3xl mx-auto flex flex-col">
+        <ScrollArea class="flex-grow p-4">
+          {#each chatMessages as message, index (index)}
+            <div class="mb-4 p-2 bg-secondary rounded-lg">
+              {message}
+            </div>
+          {/each}
+        </ScrollArea>
 
-    <form onsubmit={sendMessage} class="p-4 border-t border-border flex">
-      <Textarea placeholder="Type your message..." name="message" bind:value={inputMessage} class="flex-grow mr-2" />
-      <Button type="submit" disabled={isLoading}>
-        {#if isLoading}Loading{:else}Send{/if}
-      </Button>
-    </form>
-  </div>
-</div>
+        <form onsubmit={sendMessage} class="p-4 border-t border-border flex">
+          <Textarea
+            placeholder="Type your message..."
+            name="message"
+            bind:value={inputMessage}
+            class="flex-grow mr-2"
+          />
+          <Button type="submit" disabled={isLoading}>
+            {#if isLoading}Loading{:else}Send{/if}
+          </Button>
+        </form>
+      </div>
+    </div>
+  </Sidebar.Inset>
+  <Sidebar.Root side="right" variant="floating">
+    <Sidebar.Header>
+      <Sidebar.GroupLabel>
+        <div class="font-semibold text-[1rem] text-foreground">Model configuration</div>
+      </Sidebar.GroupLabel>
+    </Sidebar.Header>
+    <Sidebar.Content>
+      <Sidebar.Group class="p-4">
+        <form class="space-y-6">
+          <div class="flex w-full flex-col gap-1.5">
+            <Label for="anthropic">Anthropic</Label>
+            <p class="text-muted-foreground text-sm">
+              Create an API key at <a
+                href="https://console.anthropic.com/settings/keys"
+                target="_blank"
+                class="underline">https://console.anthropic.com/settings/keys</a
+              >
+            </p>
+            <Input type="text" id="anthropic" placeholder="sk-ant-xxxxxxx" />
+          </div>
+          <div class="flex w-full flex-col gap-1.5">
+            <Label for="gemini">Google Gemini</Label>
+            <p class="text-muted-foreground text-sm">
+              Create an API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline"
+                >https://aistudio.google.com/app/apikey</a
+              >
+            </p>
+            <Input type="text" id="gemini" placeholder="AIzaxxxxxxx" />
+          </div>
+          <div class="flex justify-end">
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
+      </Sidebar.Group>
+      <Sidebar.Group />
+    </Sidebar.Content>
+    <Sidebar.Footer /></Sidebar.Root
+  >
+</Sidebar.Provider>
