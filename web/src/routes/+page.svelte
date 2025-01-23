@@ -1,11 +1,12 @@
 <script lang="ts">
+  import ChatMessage from "$lib/components/chat/chat-message.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
-  import { ScrollArea } from "$lib/components/ui/scroll-area";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea";
   import { type CoreMessage } from "ai";
+  import { Loader } from "lucide-svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
@@ -26,6 +27,7 @@
       const eventData = JSON.parse(event.data) as CoreMessage;
       chatMessages.push(eventData);
     };
+
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);
       // if (eventSource.readyState === EventSource.CLOSED) {
@@ -42,10 +44,14 @@
     // TODO Cleanup event listeners
   });
 
-  async function sendMessage() {
+  async function sendMessage(event: SubmitEvent) {
+    event.preventDefault();
     isLoading = true;
 
     const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: anthropicApiKey };
+    const inputMessageCopy = inputMessage;
+    inputMessage = "";
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,8 +59,8 @@
     });
     isLoading = false;
     if (response.status === 202) {
-      inputMessage = "";
     } else {
+      inputMessage = inputMessageCopy;
       const resJson = await response.json();
       toast.error("An error occurred: " + resJson.message, { position: "top-center" });
     }
@@ -63,27 +69,24 @@
 
 <Sidebar.Provider style="--sidebar-width: 500px">
   <Sidebar.Inset>
-    <div class="flex h-screen">
-      <div class="w-1/2 flex-1 max-w-3xl mx-auto flex flex-col">
-        <ScrollArea class="flex-grow p-4">
-          {#each chatMessages as message, index (index)}
-            <div class="mb-4 p-2 bg-secondary rounded-lg">
-              <p>{message.role}:</p>
-              {JSON.stringify(message.content)}
-            </div>
-          {/each}
-        </ScrollArea>
+    <div class="">
+      <div class="max-w-screen-md mx-auto p-4 mb-4 space-y-2">
+        {#each chatMessages as message}
+          <ChatMessage {message} />
+        {/each}
 
-        <form onsubmit={sendMessage} class="p-4 border-t border-border flex">
+        {#if isLoading}
+          <div class="flex gap-2"><Loader class="animate-spin" /><span>Generating response</span></div>
+        {/if}
+
+        <form onsubmit={sendMessage} class="flex">
           <Textarea
             placeholder="Type your message..."
             name="message"
             bind:value={inputMessage}
             class="flex-grow mr-2"
           />
-          <Button type="submit" disabled={isLoading}>
-            {#if isLoading}Loading{:else}Send{/if}
-          </Button>
+          <Button type="submit" disabled={isLoading}>Send</Button>
         </form>
       </div>
     </div>
