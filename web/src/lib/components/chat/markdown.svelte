@@ -1,6 +1,9 @@
 <script lang="ts">
+  import SvelteMarkdown from "@humanspeak/svelte-markdown";
+
   let { text }: { text: string } = $props();
 </script>
 
-<!-- TODO -->
-<div>{text}</div>
+<div class="prose">
+  <SvelteMarkdown source={text} />
+</div>
