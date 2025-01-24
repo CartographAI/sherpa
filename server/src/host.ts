@@ -12,11 +12,15 @@ import type { BaseClient } from "./baseClient";
 
 import { createFilesystemClient } from "./filesystemClient";
 
-export async function createHost({ model, apiKey }: { model: string; apiKey: string }) {
+export async function createHost({
+  model,
+  apiKey,
+  allowedDirectories,
+}: { model: string; apiKey: string; allowedDirectories: string[] }) {
   const anthropic = createAnthropic({ apiKey });
   const languageModel = anthropic(model);
   const host = new Host(languageModel);
-  await host.createClientsServers();
+  await host.createClientsServers(allowedDirectories);
   return host;
 }
 
@@ -30,8 +34,8 @@ export class Host {
     this.model = model;
   }
 
-  async createClientsServers(): Promise<void> {
-    const client = await createFilesystemClient(["."]); // TODO: pass in allowedDirectories
+  async createClientsServers(allowedDirectories: string[]): Promise<void> {
+    const client = await createFilesystemClient(allowedDirectories);
     this.clients.push(client);
 
     for (const client of this.clients) {

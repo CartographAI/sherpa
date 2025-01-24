@@ -10,6 +10,12 @@ import { SSEStreamingApi, streamSSE } from "hono/streaming";
 import * as path from "path";
 import { createHost } from "./host";
 
+const allowedDirectories = process.argv.slice(2);
+if (allowedDirectories.length === 0) {
+  console.log("No directories specified. Usage: npx sherpa path/to/dir1 [dir2] [...]");
+  process.exit(1);
+}
+
 const app = new Hono();
 app.use("*", logger());
 app.use(cors());
@@ -61,7 +67,7 @@ app.get("/api/events", (c) => {
 
 app.post("/api/chat", async (c) => {
   const { userPrompt, model, apiKey } = await c.req.json();
-  const host = await createHost({ model, apiKey });
+  const host = await createHost({ model, apiKey, allowedDirectories });
   await sendMessageToClient({ role: "user", content: userPrompt });
 
   try {
