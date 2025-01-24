@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { CoreMessage } from "ai";
 import { Hono } from "hono";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
-import { serve } from "@hono/node-server";
+import * as path from "path";
 import { createHost } from "./host";
 
 const app = new Hono();
@@ -72,16 +73,24 @@ app.post("/api/chat", async (c) => {
   }
 });
 
+// Serve web app (index.html at the root path "/", assets at "/_app/*" and favicon at "/favicon.png")
+
+// Hono expects the root/path in serveStatic to be relative to the working directory
+// where this file is being executed from. This finds the relative path from the working directory
+// to the parent folder of this file, then we can use it to point to the web build files.
+const relativePathToScript = path.relative(process.cwd(), __dirname);
+
+app.get("/", serveStatic({ path: `${relativePathToScript}/web/index.html` }));
+app.get("/favicon.png", serveStatic({ path: `${relativePathToScript}/web/favicon.png` }));
 app.use(
   "/_app/*",
   serveStatic({
-    root: "./dist/web",
+    root: `${relativePathToScript}/web`,
   }),
 );
-app.get("/favicon.png", serveStatic({ path: "./dist/web/favicon.png" }));
-app.get("/", serveStatic({ path: "./dist/web/index.html" }));
 
 serve({
   fetch: app.fetch,
   port: 3031,
 });
+console.log("Server is running. Open http://localhost:3031 in your browser to use the app.");
