@@ -51,7 +51,6 @@
     const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: anthropicApiKey };
     const inputMessageCopy = inputMessage;
     inputMessage = "";
-    await new Promise((resolve) => setTimeout(resolve, 3000));
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
