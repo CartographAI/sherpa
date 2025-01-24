@@ -15,8 +15,12 @@
   let chatMessages: CoreMessage[] = $state([]);
   let isLoading: boolean = $state(false);
   let inputMessage: string = $state("");
-  let anthropicApiKey: string = $state("");
-  let geminiApiKey: string = $state("");
+  let apiKeys: { anthropic: string; gemini: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
+
+  $effect(() => {
+    localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
+    toast.success("Saved", { position: "top-right" });
+  });
 
   onMount(() => {
     console.log("creating event source");
@@ -48,7 +52,7 @@
     event.preventDefault();
     isLoading = true;
 
-    const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: anthropicApiKey };
+    const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: apiKeys.anthropic };
     const inputMessageCopy = inputMessage;
     inputMessage = "";
     const response = await fetch(API_BASE_URL + "/api/chat", {
@@ -108,7 +112,15 @@
                 class="underline">https://console.anthropic.com/settings/keys</a
               >
             </p>
-            <Input type="text" id="anthropic" placeholder="sk-ant-xxxxxxx" bind:value={anthropicApiKey} />
+            <Input
+              type="text"
+              id="anthropic"
+              placeholder="sk-ant-xxxxxxx"
+              defaultValue={apiKeys.anthropic}
+              onblur={(event) => {
+                apiKeys.anthropic = event.currentTarget.value;
+              }}
+            />
           </div>
           <div class="flex w-full flex-col gap-1.5">
             <Label for="gemini">Google Gemini</Label>
@@ -117,10 +129,15 @@
                 >https://aistudio.google.com/app/apikey</a
               >
             </p>
-            <Input type="text" id="gemini" placeholder="AIzaxxxxxxx" bind:value={geminiApiKey} />
-          </div>
-          <div class="flex justify-end">
-            <Button type="submit">Save</Button>
+            <Input
+              type="text"
+              id="gemini"
+              placeholder="AIzaxxxxxxx"
+              defaultValue={apiKeys.gemini}
+              onblur={(event) => {
+                apiKeys.gemini = event.currentTarget.value;
+              }}
+            />
           </div>
         </form>
       </Sidebar.Group>
