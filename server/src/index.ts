@@ -65,7 +65,10 @@ app.post("/api/chat", async (c) => {
   await sendMessageToClient({ role: "user", content: userPrompt });
 
   try {
-    await host.processQuery({ userPrompt, onStepComplete: sendMessageToClient });
+    await host.processQuery({
+      userPrompt,
+      onStepComplete: sendMessageToClient,
+    });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
     console.error("Error processing query:", error);

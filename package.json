@@ -10,10 +10,11 @@
   "scripts": {
     "build": "bun run clean && bun run build:web && bun run build:server",
     "build:web": "cd web && bun install && bun run build",
-    "build:server": "cd server && bun install && bun run build",
-    "clean": "rm -rf dist",
-    "dev": "concurrently \"cd web && bun run dev\" \"cd server && bun run dev\"",
-    "start": "bun dist/index.js"
+    "build:server": "cd server && bun install && cd ../ && tsup",
+    "clean": "rimraf web/dist dist",
+    "dev:web": "cd web && bun run dev",
+    "dev:server": "tsup && node dist/index.cjs",
+    "start": "node dist/index.cjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
   }
