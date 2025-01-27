@@ -55,9 +55,8 @@ describe("TreeGenerator", () => {
   test("should generate basic tree structure", () => {
     const result = treeGenerator.generate("/test-dir");
     expect(result).toBe(
+      // biome-ignore format: the tree should not be formatted
       "/test-dir\n" +
-        "├── .git\n" +
-        "│   └── HEAD\n" +
         "├── .gitignore\n" +
         "├── file1.txt\n" +
         "└── nested-dir\n" +

@@ -110,11 +110,15 @@ export class TreeGenerator {
     };
   }
 
+  private readonly EXCLUDED_DIRECTORIES = new Set([".git"]);
+
   private filterIgnoredEntries(dirPath: string, entries: fs.Dirent[]): fs.Dirent[] {
     const ig = this.loadIgnoreRules(dirPath);
     const baseDir = this.findBaseDir(dirPath);
 
-    return entries.filter((entry) => {
+    const filteredEntries = entries.filter((entry) => !this.EXCLUDED_DIRECTORIES.has(entry.name));
+
+    return filteredEntries.filter((entry) => {
       const entryPath = path.join(dirPath, entry.name);
       const relativePath = path.relative(baseDir, entryPath);
       return !ig.ignores(relativePath);
