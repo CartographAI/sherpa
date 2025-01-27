@@ -12,7 +12,7 @@ describe("TreeGenerator", () => {
     vol = Volume.fromJSON({
       "/test-dir/.git/HEAD": "",
       "/test-dir/file1.txt": "content",
-      "/test-dir/.gitignore": "*.log\nnode_modules/",
+      "/test-dir/.gitignore": "*.log",
       "/test-dir/nested-dir/file2.txt": "content",
       "/test-dir/nested-dir/ignored.log": "content",
     });
@@ -113,5 +113,25 @@ describe("TreeGenerator", () => {
 
     const result = treeGenerator.generate("/test-dir");
     expect(result).not.toContain("global-ignore.txt");
+  });
+
+  test("should exclude node_modules directory when in .gitignore", () => {
+    // Add node_modules directory and ensure .gitignore contains the rule
+    vol.mkdirSync("/test-dir/node_modules");
+    vol.writeFileSync("/test-dir/node_modules/module.js", "content");
+    vol.writeFileSync("/test-dir/.gitignore", "*.log\nnode_modules\n");
+
+    const result = treeGenerator.generate("/test-dir");
+    expect(result).not.toContain("node_modules");
+  });
+
+  test("should exclude node_modules directory when in .gitignore with trailing slash", () => {
+    // Add node_modules directory and ensure .gitignore contains the rule
+    vol.mkdirSync("/test-dir/node_modules");
+    vol.writeFileSync("/test-dir/node_modules/module.js", "content");
+    vol.writeFileSync("/test-dir/.gitignore", "*.log\nnode_modules/\n");
+
+    const result = treeGenerator.generate("/test-dir");
+    expect(result).not.toContain("node_modules");
   });
 });

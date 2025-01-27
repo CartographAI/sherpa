@@ -121,7 +121,11 @@ export class TreeGenerator {
     return filteredEntries.filter((entry) => {
       const entryPath = path.join(dirPath, entry.name);
       const relativePath = path.relative(baseDir, entryPath);
-      return !ig.ignores(relativePath);
+
+      // If it's a directory, append a trailing slash to match directory-specific patterns
+      const pathToCheck = entry.isDirectory() ? `${relativePath}/` : relativePath;
+
+      return !ig.ignores(pathToCheck);
     });
   }
 
