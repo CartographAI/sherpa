@@ -18,10 +18,13 @@
   let isLoading: boolean = $state(false);
   let inputMessage: string = $state("");
 
-  let selectedModel: string = $state(defaultModel);
+  let selectedModel: string = $state(localStorage.getItem("modelId") || defaultModel);
+  $effect(() => {
+    localStorage.setItem("modelId", selectedModel);
+  });
   let modelSelectContent = $derived(getNameForModelId(selectedModel) ?? "Select a model");
 
-  let apiKeys: { anthropic: string; gemini: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
+  let apiKeys: { anthropic?: string; gemini?: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
   $effect(() => {
     localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
     toast.success("Saved", { position: "top-right" });
