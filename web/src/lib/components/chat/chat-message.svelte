@@ -11,7 +11,7 @@
 
 <div class="p-4 rounded-lg flex {message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}">
   {#if message.role === "user"}
-    <Avatar><UserRound /></Avatar>
+    <Avatar class="w-6 h-6 mr-2"><UserRound /></Avatar>
   {/if}
 
   <div class="flex flex-col gap-4">
@@ -19,10 +19,10 @@
       <Markdown text={message.content} />
     {:else}
       {#each message.content as item, index (index)}
-        <div>
-          {#if item.type === "text"}
-            <Markdown text={item.text || ""} />
-          {:else}
+        {#if item.type === "text"}
+          <Markdown text={item.text} />
+        {:else}
+          <div>
             <Badge color="teal" class="mb-2">
               {item.type.replaceAll("-", " ")}
             </Badge>
@@ -36,8 +36,8 @@
               <p>Tool: {item.toolName}</p>
               <Json content={{ result: item.result }} />
             {/if}
-          {/if}
-        </div>
+          </div>
+        {/if}
       {/each}
     {/if}
   </div>
