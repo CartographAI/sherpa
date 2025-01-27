@@ -5,10 +5,11 @@ import { Volume } from "memfs";
 describe("TreeGenerator", () => {
   let treeGenerator: TreeGenerator;
   let mockFs: any;
+  let vol: any;
 
   beforeEach(() => {
     // Create a new volume for each test
-    const vol = Volume.fromJSON({
+    vol = Volume.fromJSON({
       "/test-dir/.git/HEAD": "",
       "/test-dir/file1.txt": "content",
       "/test-dir/.gitignore": "*.log\nnode_modules/",
@@ -81,5 +82,36 @@ describe("TreeGenerator", () => {
     expect(result).toContain("file1.txt");
     expect(result).toContain("nested-dir");
     expect(result).not.toContain("file2.txt");
+  });
+
+  test("should include files matching negated patterns", () => {
+    // Update .gitignore and add important.log
+    vol.writeFileSync("/test-dir/.gitignore", "*.log\n!important.log");
+    vol.writeFileSync("/test-dir/important.log", "content");
+
+    const result = treeGenerator.generate("/test-dir");
+    expect(result).toContain("important.log");
+  });
+
+  test("should list directories that become empty after filtering", () => {
+    // Add empty-dir with a file that's ignored
+    vol.mkdirSync("/test-dir/empty-dir");
+    vol.writeFileSync("/test-dir/empty-dir/.keep", "content");
+    vol.appendFileSync("/test-dir/.gitignore", "\n.keep");
+
+    const result = treeGenerator.generate("/test-dir");
+    expect(result).toContain("empty-dir");
+    expect(result).not.toContain(".keep");
+  });
+
+  test("should apply .gitignore from filesystem root when not in git repo", () => {
+    // Remove .git directory and add root .gitignore
+    vol.unlinkSync("/test-dir/.git/HEAD");
+    vol.rmdirSync("/test-dir/.git");
+    vol.writeFileSync("/.gitignore", "global-ignore.txt");
+    vol.writeFileSync("/test-dir/global-ignore.txt", "content");
+
+    const result = treeGenerator.generate("/test-dir");
+    expect(result).not.toContain("global-ignore.txt");
   });
 });
