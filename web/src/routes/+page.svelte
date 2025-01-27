@@ -8,7 +8,7 @@
   import { Textarea } from "$lib/components/ui/textarea";
   import { defaultModel, getNameForModelId, getProviderForModelId, modelConfig } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { Loader } from "lucide-svelte";
+  import { Loader, Plus } from "lucide-svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
@@ -66,7 +66,13 @@
       return;
     }
     isLoading = true;
-    const requestBody = { userPrompt: inputMessage, model: selectedModel, modelProvider, apiKey };
+    const requestBody = {
+      userPrompt: inputMessage,
+      previousMessages: chatMessages,
+      model: selectedModel,
+      modelProvider,
+      apiKey,
+    };
     const inputMessageCopy = inputMessage;
     inputMessage = "";
     const response = await fetch(API_BASE_URL + "/api/chat", {
@@ -86,11 +92,23 @@
 
 <Sidebar.Provider style="--sidebar-width: 500px">
   <Sidebar.Inset>
-    <div class="">
-      <div class="max-w-screen-md mx-auto p-4 mb-4 space-y-2">
-        {#each chatMessages as message}
-          <ChatMessage {message} />
-        {/each}
+    <div class="flex">
+      <div class="fixed p-4">
+        <Button
+          variant="secondary"
+          onclick={() => {
+            chatMessages = [];
+          }}><Plus />New chat</Button
+        >
+      </div>
+      <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
+        {#if chatMessages.length > 0}
+          <div class="space-y-2">
+            {#each chatMessages as message}
+              <ChatMessage {message} />
+            {/each}
+          </div>
+        {/if}
 
         {#if isLoading}
           <div class="flex gap-2"><Loader class="animate-spin" /><span>Generating response</span></div>

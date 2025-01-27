@@ -70,15 +70,21 @@ export class Host {
   async processQuery({
     systemPrompt,
     userPrompt,
+    previousMessages = [],
     onStepComplete,
-  }: { systemPrompt?: string; userPrompt: string; onStepComplete: (message: CoreMessage) => void }): Promise<string> {
+  }: {
+    systemPrompt?: string;
+    userPrompt: string;
+    previousMessages?: CoreMessage[];
+    onStepComplete: (message: CoreMessage) => void;
+  }): Promise<string> {
     if (this.clients.length === 0) {
       throw new Error("No clients connected.");
     }
     console.log("userPrompt :>>", userPrompt);
     console.log("systemPrompt :>>", systemPrompt);
 
-    let currentMessages: CoreMessage[] = [];
+    let currentMessages = [...previousMessages];
     if (systemPrompt) currentMessages.push({ role: "system" as const, content: systemPrompt });
     currentMessages.push({ role: "user" as const, content: userPrompt });
     let finalText: string[] = [userPrompt];

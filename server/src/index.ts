@@ -66,7 +66,7 @@ app.get("/api/events", (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { userPrompt, model, modelProvider, apiKey } = await c.req.json();
+  const { userPrompt, previousMessages, model, modelProvider, apiKey } = await c.req.json();
   const host = await createHost({
     model,
     modelProvider,
@@ -78,6 +78,7 @@ app.post("/api/chat", async (c) => {
   try {
     await host.processQuery({
       userPrompt,
+      previousMessages,
       onStepComplete: sendMessageToClient,
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
