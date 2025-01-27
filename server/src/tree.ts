@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import ignore from "ignore";
 
 interface TreeOptions {
   maxDepth?: number;
@@ -51,10 +52,11 @@ export class TreeGenerator {
 
     try {
       const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const filteredEntries = this.filterIgnoredEntries(dirPath, entries);
 
-      for (let i = 0; i < entries.length; i++) {
-        const entry = entries[i];
-        const isLast = i === entries.length - 1;
+      for (let i = 0; i < filteredEntries.length; i++) {
+        const entry = filteredEntries[i];
+        const isLast = i === filteredEntries.length - 1;
         const currentPrefix = prefix + (isLast ? this.lastBranch : this.branch);
         const nextPrefix = prefix + (isLast ? "    " : this.indent);
         const fullPath = path.join(dirPath, entry.name);
@@ -85,8 +87,9 @@ export class TreeGenerator {
 
     const children: TreeNode[] = [];
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const filteredEntries = this.filterIgnoredEntries(dirPath, entries);
 
-    for (const entry of entries) {
+    for (const entry of filteredEntries) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
         children.push(this.buildDirectoryTree(fullPath));
@@ -105,6 +108,115 @@ export class TreeGenerator {
       path: dirPath,
       children,
     };
+  }
+
+  private filterIgnoredEntries(dirPath: string, entries: fs.Dirent[]): fs.Dirent[] {
+    const ig = this.loadIgnoreRules(dirPath);
+    const baseDir = this.findBaseDir(dirPath);
+
+    return entries.filter((entry) => {
+      const entryPath = path.join(dirPath, entry.name);
+      const relativePath = path.relative(baseDir, entryPath);
+      return !ig.ignores(relativePath);
+    });
+  }
+
+  private loadIgnoreRules(dirPath: string): ReturnType<typeof ignore> {
+    const gitRoot = this.findGitRoot(dirPath);
+    const baseDir = gitRoot || this.getFilesystemRoot(dirPath);
+    const dirs = gitRoot ? this.getDirsFromGitRoot(gitRoot, dirPath) : this.getDirsFromFilesystemRoot(dirPath);
+
+    const ig = ignore();
+    let currentIg = ignore();
+
+    for (const dir of dirs) {
+      const relativeDir = path.relative(baseDir, dir);
+      if (relativeDir && currentIg.ignores(relativeDir)) {
+        continue;
+      }
+
+      const gitignorePath = path.join(dir, ".gitignore");
+      if (fs.existsSync(gitignorePath)) {
+        try {
+          const content = fs.readFileSync(gitignorePath, "utf-8");
+          const rules = content
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line && !line.startsWith("#"))
+            .map((line) => {
+              const ruleDir = path.relative(baseDir, dir);
+              return ruleDir === "." ? line : path.join(ruleDir, line);
+            });
+
+          currentIg = ignore().add(rules);
+          ig.add(rules);
+        } catch (error) {
+          // Ignore unreadable .gitignore
+        }
+      }
+    }
+
+    return ig;
+  }
+
+  private findGitRoot(currentDir: string): string | null {
+    let dir = path.resolve(currentDir);
+    while (true) {
+      const gitDir = path.join(dir, ".git");
+      try {
+        if (fs.existsSync(gitDir) && fs.statSync(gitDir).isDirectory()) {
+          return dir;
+        }
+      } catch (error) {
+        // Ignore errors
+      }
+      const parentDir = path.dirname(dir);
+      if (parentDir === dir) break; // Reached filesystem root
+      dir = parentDir;
+    }
+    return null;
+  }
+
+  private getDirsFromGitRoot(gitRoot: string, currentDir: string): string[] {
+    const dirs: string[] = [];
+    let current = gitRoot;
+    dirs.push(current);
+
+    const relativePath = path.relative(gitRoot, currentDir).split(path.sep);
+    for (const part of relativePath) {
+      if (!part) continue;
+      current = path.join(current, part);
+      dirs.push(current);
+    }
+
+    return dirs;
+  }
+
+  private getDirsFromFilesystemRoot(dirPath: string): string[] {
+    let current = path.resolve(dirPath);
+    const ancestors: string[] = [];
+
+    while (true) {
+      ancestors.push(current);
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+
+    return ancestors.reverse();
+  }
+
+  private findBaseDir(dirPath: string): string {
+    const gitRoot = this.findGitRoot(dirPath);
+    return gitRoot || this.getFilesystemRoot(dirPath);
+  }
+
+  private getFilesystemRoot(dirPath: string): string {
+    let root = path.resolve(dirPath);
+    while (path.dirname(root) !== root) {
+      root = path.dirname(root);
+    }
+    return root;
   }
 }
 
