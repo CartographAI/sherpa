@@ -3,8 +3,10 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
+  import * as Select from "$lib/components/ui/select/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea";
+  import { defaultModel, getNameForModelId, getProviderForModelId, modelConfig } from "$lib/config";
   import { type CoreMessage } from "ai";
   import { Loader } from "lucide-svelte";
   import { onMount } from "svelte";
@@ -15,8 +17,11 @@
   let chatMessages: CoreMessage[] = $state([]);
   let isLoading: boolean = $state(false);
   let inputMessage: string = $state("");
-  let apiKeys: { anthropic: string; gemini: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
 
+  let selectedModel: string = $state(defaultModel);
+  let modelSelectContent = $derived(getNameForModelId(selectedModel) ?? "Select a model");
+
+  let apiKeys: { anthropic: string; gemini: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
   $effect(() => {
     localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
     toast.success("Saved", { position: "top-right" });
@@ -50,9 +55,15 @@
 
   async function sendMessage(event: SubmitEvent) {
     event.preventDefault();
-    isLoading = true;
 
-    const requestBody = { userPrompt: inputMessage, model: "claude-3-5-sonnet-20241022", apiKey: apiKeys.anthropic };
+    const modelProvider = getProviderForModelId(selectedModel)!;
+    const apiKey = modelProvider === "Anthropic" ? apiKeys.anthropic : apiKeys.gemini;
+    if (!apiKey) {
+      toast.error(`Please configure your ${modelProvider} API key to use this model`, { position: "top-center" });
+      return;
+    }
+    isLoading = true;
+    const requestBody = { userPrompt: inputMessage, model: selectedModel, modelProvider, apiKey };
     const inputMessageCopy = inputMessage;
     inputMessage = "";
     const response = await fetch(API_BASE_URL + "/api/chat", {
@@ -82,14 +93,31 @@
           <div class="flex gap-2"><Loader class="animate-spin" /><span>Generating response</span></div>
         {/if}
 
-        <form onsubmit={sendMessage} class="flex">
-          <Textarea
-            placeholder="Type your message..."
-            name="message"
-            bind:value={inputMessage}
-            class="flex-grow mr-2"
-          />
-          <Button type="submit" disabled={isLoading}>Send</Button>
+        <form onsubmit={sendMessage} class="flex flex-col gap-1">
+          <div class="flex">
+            <Textarea
+              placeholder="Type your message..."
+              name="message"
+              bind:value={inputMessage}
+              class="flex-grow mr-2"
+            />
+            <Button type="submit" disabled={isLoading}>Send</Button>
+          </div>
+          <Select.Root type="single" bind:value={selectedModel}>
+            <Select.Trigger class="w-[240px]">{modelSelectContent}</Select.Trigger>
+            <Select.Content>
+              {#each modelConfig as provider}
+                <Select.Group>
+                  <Select.GroupHeading>{provider.provider}</Select.GroupHeading>
+                  {#each provider.models as model}
+                    <Select.Item value={model.id}>
+                      {model.name}<span class="text-muted-foreground ml-1">({model.id})</span>
+                    </Select.Item>
+                  {/each}
+                </Select.Group>
+              {/each}
+            </Select.Content>
+          </Select.Root>
         </form>
       </div>
     </div>

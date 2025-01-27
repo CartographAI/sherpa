@@ -66,8 +66,13 @@ app.get("/api/events", (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { userPrompt, model, apiKey } = await c.req.json();
-  const host = await createHost({ model, apiKey, allowedDirectories });
+  const { userPrompt, model, modelProvider, apiKey } = await c.req.json();
+  const host = await createHost({
+    model,
+    modelProvider,
+    apiKey,
+    allowedDirectories,
+  });
   await sendMessageToClient({ role: "user", content: userPrompt });
 
   try {

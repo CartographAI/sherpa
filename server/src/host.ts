@@ -1,4 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   generateText,
   jsonSchema,
@@ -16,9 +17,25 @@ export async function createHost({
   model,
   apiKey,
   allowedDirectories,
-}: { model: string; apiKey: string; allowedDirectories: string[] }) {
-  const anthropic = createAnthropic({ apiKey });
-  const languageModel = anthropic(model);
+  modelProvider,
+}: {
+  model: string;
+  apiKey: string;
+  allowedDirectories: string[];
+  modelProvider: "Anthropic" | "Gemini";
+}) {
+  let languageModel;
+
+  if (modelProvider === "Anthropic") {
+    const anthropic = createAnthropic({ apiKey });
+    languageModel = anthropic(model);
+  } else if (modelProvider === "Gemini") {
+    const google = createGoogleGenerativeAI({ apiKey });
+    languageModel = google(model);
+  } else {
+    throw new Error("Unsupported model provider");
+  }
+
   const host = new Host(languageModel);
   await host.createClientsServers(allowedDirectories);
   return host;
