@@ -15,6 +15,7 @@
     "ignore": "^7.0.3"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "memfs": "^4.17.0"
   }
 }
