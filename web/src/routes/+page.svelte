@@ -99,13 +99,15 @@
     <MessageInput handleSubmit={sendMessage} />
   </div>
   <div class="flex flex-col h-svh">
-    <div class="flex flex-row justify-end gap-2 p-3 z-20">
-      <Button onclick={() => (chat.messages = [])}>
-        <Plus />New chat
-      </Button>
-      <Button variant="secondary" onclick={() => (isConfigOpen = !isConfigOpen)}>
-        <SlidersHorizontal />Config
-      </Button>
+    <div class="w-[250px]">
+      <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
+        <Button onclick={() => (chat.messages = [])}>
+          <Plus />New chat
+        </Button>
+        <Button variant="secondary" onclick={() => (isConfigOpen = !isConfigOpen)}>
+          <SlidersHorizontal />Config
+        </Button>
+      </div>
     </div>
     <ConfigSidebar bind:open={() => isConfigOpen, (value) => (isConfigOpen = value)} />
   </div>
