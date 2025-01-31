@@ -1,35 +1,25 @@
 <script lang="ts">
+  import { createChatState, createConfigState } from "$lib/appState.svelte";
   import ChatMessage from "$lib/components/chat/chat-message.svelte";
+  import ConfigSidebar from "$lib/components/chat/config-sidebar.svelte";
+  import MessageInput from "$lib/components/chat/message-input.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { Input } from "$lib/components/ui/input";
-  import { Label } from "$lib/components/ui/label";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import { Textarea } from "$lib/components/ui/textarea";
-  import { defaultModel, getNameForModelId, getProviderForModelId, modelConfig } from "$lib/config";
+  import { getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { Loader, Plus, SlidersHorizontal, X } from "lucide-svelte";
+  import { Loader, Plus, SlidersHorizontal } from "lucide-svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
 
-  let chatMessages: CoreMessage[] = $state([]);
   let isLoading: boolean = $state(false);
-  let inputMessage: string = $state("");
   let isConfigOpen: boolean = $state(false);
 
-  let selectedModel: string = $state(localStorage.getItem("modelId") || defaultModel);
-  $effect(() => {
-    localStorage.setItem("modelId", selectedModel);
-  });
-  let modelSelectContent = $derived(getNameForModelId(selectedModel) ?? "Select a model");
+  const chat = createChatState();
+  const config = createConfigState();
 
-  let apiKeys: { anthropic?: string; gemini?: string } = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
   $effect(() => {
-    localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
-    toast.success("Saved", { position: "top-right" });
-    if (!apiKeys.anthropic && !apiKeys.gemini) isConfigOpen = true;
+    if (!config.hasApiKeyConfigured) isConfigOpen = true;
   });
 
   onMount(() => {
@@ -39,7 +29,7 @@
     eventSource.onmessage = (event) => {
       console.log("received sse message:", event);
       const eventData = JSON.parse(event.data) as CoreMessage;
-      chatMessages.push(eventData);
+      chat.messages.push(eventData);
     };
 
     eventSource.onerror = (error) => {
@@ -61,22 +51,22 @@
   async function sendMessage(event: SubmitEvent) {
     event.preventDefault();
 
-    const modelProvider = getProviderForModelId(selectedModel)!;
-    const apiKey = modelProvider === "Anthropic" ? apiKeys.anthropic : apiKeys.gemini;
+    const modelProvider = getProviderForModelId(chat.selectedModel)!;
+    const apiKey = modelProvider === "Anthropic" ? config.apiKeys.anthropic : config.apiKeys.gemini;
     if (!apiKey) {
       toast.error(`Please configure your ${modelProvider} API key to use this model`, { position: "top-center" });
       return;
     }
     isLoading = true;
     const requestBody = {
-      userPrompt: inputMessage,
-      previousMessages: chatMessages,
-      model: selectedModel,
+      userPrompt: chat.inputMessage,
+      previousMessages: chat.messages,
+      model: chat.selectedModel,
       modelProvider,
       apiKey,
     };
-    const inputMessageCopy = inputMessage;
-    inputMessage = "";
+    const inputMessageCopy = chat.inputMessage;
+    chat.inputMessage = "";
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -85,7 +75,7 @@
     isLoading = false;
     if (response.status === 202) {
     } else {
-      inputMessage = inputMessageCopy;
+      chat.inputMessage = inputMessageCopy;
       const resJson = await response.json();
       toast.error("An error occurred: " + resJson.message, { position: "top-center" });
     }
@@ -94,9 +84,9 @@
 
 <div class="flex gap-2">
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
-    {#if chatMessages.length > 0}
+    {#if chat.messages.length > 0}
       <div class="space-y-2">
-        {#each chatMessages as message}
+        {#each chat.messages as message}
           <ChatMessage {message} />
         {/each}
       </div>
@@ -106,111 +96,17 @@
       <div class="flex gap-2"><Loader class="animate-spin" /><span>Generating response</span></div>
     {/if}
 
-    <form onsubmit={sendMessage} class="flex flex-col gap-1">
-      <div class="flex">
-        <Textarea placeholder="Type your message..." name="message" bind:value={inputMessage} class="flex-grow mr-2" />
-        <Button type="submit" disabled={isLoading}>Send</Button>
-      </div>
-      <Select.Root type="single" bind:value={selectedModel}>
-        <Select.Trigger class="w-[240px]">{modelSelectContent}</Select.Trigger>
-        <Select.Content>
-          {#each modelConfig as provider}
-            <Select.Group>
-              <Select.GroupHeading>{provider.provider}</Select.GroupHeading>
-              {#each provider.models as model}
-                <Select.Item value={model.id}>
-                  {model.name}<span class="text-muted-foreground ml-1">({model.id})</span>
-                </Select.Item>
-              {/each}
-            </Select.Group>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-    </form>
+    <MessageInput handleSubmit={sendMessage} />
   </div>
   <div class="flex flex-col h-svh">
     <div class="flex flex-row justify-end gap-2 p-3 z-20">
-      <Button
-        onclick={() => {
-          chatMessages = [];
-        }}
-      >
-        <Plus />New chat</Button
-      >
-      <Button
-        variant="secondary"
-        onclick={() => {
-          isConfigOpen = !isConfigOpen;
-        }}
-      >
-        <SlidersHorizontal />Config</Button
-      >
+      <Button onclick={() => (chat.messages = [])}>
+        <Plus />New chat
+      </Button>
+      <Button variant="secondary" onclick={() => (isConfigOpen = !isConfigOpen)}>
+        <SlidersHorizontal />Config
+      </Button>
     </div>
-    <Sidebar.Provider
-      style="--sidebar-width: 500px"
-      class="flex-1"
-      bind:open={() => isConfigOpen, (value) => (isConfigOpen = value)}
-    >
-      <Sidebar.Root side="right" variant="floating" class="p-2 pt-16">
-        <Sidebar.Header class="flex flex-row">
-          <Sidebar.GroupLabel class="flex w-full justify-between">
-            <div class="font-semibold text-[1rem] text-foreground">Model configuration</div>
-            <Button
-              variant="ghost"
-              class="px-3"
-              onclick={() => {
-                isConfigOpen = false;
-              }}><X /></Button
-            >
-          </Sidebar.GroupLabel>
-        </Sidebar.Header>
-        <Sidebar.Content>
-          <Sidebar.Group class="p-4">
-            <form class="space-y-6">
-              <div class="flex w-full flex-col gap-1.5">
-                <Label for="anthropic">Anthropic</Label>
-                <p class="text-muted-foreground text-sm">
-                  Create an API key at <a
-                    href="https://console.anthropic.com/settings/keys"
-                    target="_blank"
-                    class="underline">https://console.anthropic.com/settings/keys</a
-                  >
-                </p>
-                <Input
-                  type="text"
-                  id="anthropic"
-                  placeholder="sk-ant-xxxxxxx"
-                  defaultValue={apiKeys.anthropic}
-                  onblur={(event) => {
-                    apiKeys.anthropic = event.currentTarget.value;
-                  }}
-                />
-              </div>
-              <div class="flex w-full flex-col gap-1.5">
-                <Label for="gemini">Google Gemini</Label>
-                <p class="text-muted-foreground text-sm">
-                  Create an API key at <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    class="underline">https://aistudio.google.com/app/apikey</a
-                  >
-                </p>
-                <Input
-                  type="text"
-                  id="gemini"
-                  placeholder="AIzaxxxxxxx"
-                  defaultValue={apiKeys.gemini}
-                  onblur={(event) => {
-                    apiKeys.gemini = event.currentTarget.value;
-                  }}
-                />
-              </div>
-            </form>
-          </Sidebar.Group>
-          <Sidebar.Group />
-        </Sidebar.Content>
-        <Sidebar.Footer /></Sidebar.Root
-      >
-    </Sidebar.Provider>
+    <ConfigSidebar bind:open={() => isConfigOpen, (value) => (isConfigOpen = value)} />
   </div>
 </div>
