@@ -3,23 +3,24 @@
   import ChatMessage from "$lib/components/chat/chat-message.svelte";
   import ConfigSidebar from "$lib/components/chat/config-sidebar.svelte";
   import MessageInput from "$lib/components/chat/message-input.svelte";
+  import ScratchPad from "$lib/components/chat/scratch-pad.svelte";
   import { Button } from "$lib/components/ui/button";
   import { getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { Loader, Plus, SlidersHorizontal } from "lucide-svelte";
+  import { Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
 
   let isLoading: boolean = $state(false);
-  let isConfigOpen: boolean = $state(false);
+  let openPanel: "config" | "scratch" | null = $state(null);
 
   const chat = createChatState();
   const config = createConfigState();
 
   $effect(() => {
-    if (!config.hasApiKeyConfigured) isConfigOpen = true;
+    if (!config.hasApiKeyConfigured) openPanel = "config";
   });
 
   onMount(() => {
@@ -47,6 +48,11 @@
     });
     // TODO Cleanup event listeners
   });
+
+  function togglePanel(panel: "config" | "scratch", open?: boolean) {
+    if (openPanel === panel && !open) openPanel = null;
+    else openPanel = panel;
+  }
 
   async function sendMessage(event: SubmitEvent) {
     event.preventDefault();
@@ -104,11 +110,15 @@
         <Button onclick={() => (chat.messages = [])}>
           <Plus />New chat
         </Button>
-        <Button variant="secondary" onclick={() => (isConfigOpen = !isConfigOpen)}>
+        <Button variant="secondary" onclick={() => togglePanel("scratch")}>
+          <Pencil />Scratch
+        </Button>
+        <Button variant="secondary" onclick={() => togglePanel("config")}>
           <SlidersHorizontal />Config
         </Button>
       </div>
     </div>
-    <ConfigSidebar bind:open={() => isConfigOpen, (value) => (isConfigOpen = value)} />
+    <ConfigSidebar bind:open={() => openPanel === "config", (value) => togglePanel("config", value)} />
+    <ScratchPad bind:open={() => openPanel === "scratch", (value) => togglePanel("scratch", value)} />
   </div>
 </div>
