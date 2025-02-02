@@ -7,6 +7,7 @@ import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
 import * as path from "path";
 import { Host } from "./host";
+import { SYSTEM_PROMPT } from "./prompts";
 
 let host: Host;
 const app = new Hono();
@@ -65,6 +66,7 @@ app.post("/api/chat", async (c) => {
 
   try {
     await host.processQuery({
+      systemPrompt: SYSTEM_PROMPT,
       userPrompt,
       previousMessages,
       onStepComplete: sendMessageToClient,
