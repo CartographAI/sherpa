@@ -175,7 +175,11 @@ export async function createServer(allowedDirectories: string[]) {
               try {
                 const validPath = await validatePath(filePath, normalizedAllowedDirectories);
                 const content = await fs.readFile(validPath, "utf-8");
-                return `${filePath}:\n${content}\n`;
+                let processedContent = content
+                  .split("\n")
+                  .map((line, i) => `L${i + 1}: ${line}`)
+                  .join("\n");
+                return `<${filePath}>\n${processedContent}\n</${filePath}>`;
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 return `${filePath}: Error - ${errorMessage}`;
@@ -183,7 +187,7 @@ export async function createServer(allowedDirectories: string[]) {
             }),
           );
           return {
-            content: [{ type: "text", text: results.join("\n---\n") }],
+            content: [{ type: "text", text: results.join("\n\n") }],
           };
         }
         case "list_directory": {
