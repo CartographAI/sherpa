@@ -68,10 +68,6 @@ const ReadFilesArgsSchema = z.object({
   paths: z.array(z.string()),
 });
 
-const ListDirectoryArgsSchema = z.object({
-  path: z.string(),
-});
-
 const TreeArgsSchema = z.object({
   path: z.string(),
   maxDepth: z.number().optional(),
@@ -128,15 +124,6 @@ export async function createServer(allowedDirectories: string[]) {
           inputSchema: zodToJsonSchema(ReadFilesArgsSchema) as ToolInput,
         },
         {
-          name: "list_directory",
-          description:
-            "Get a detailed listing of all files and directories in a specified path. " +
-            "Results clearly distinguish between files and directories with [FILE] and [DIR] " +
-            "prefixes. This tool is essential for understanding directory structure and " +
-            "finding specific files within a directory. Only works within allowed directories.",
-          inputSchema: zodToJsonSchema(ListDirectoryArgsSchema) as ToolInput,
-        },
-        {
           name: "tree",
           description:
             "Generate a tree-style visualization of a directory structure. " +
@@ -188,20 +175,6 @@ export async function createServer(allowedDirectories: string[]) {
           );
           return {
             content: [{ type: "text", text: results.join("\n\n") }],
-          };
-        }
-        case "list_directory": {
-          const parsed = ListDirectoryArgsSchema.safeParse(args);
-          if (!parsed.success) {
-            throw new Error(`Invalid arguments for list_directory: ${parsed.error}`);
-          }
-          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectories);
-          const entries = await fs.readdir(validPath, { withFileTypes: true });
-          const formatted = entries
-            .map((entry) => `${entry.isDirectory() ? "[DIR]" : "[FILE]"} ${entry.name}`)
-            .join("\n");
-          return {
-            content: [{ type: "text", text: formatted }],
           };
         }
         case "tree": {
