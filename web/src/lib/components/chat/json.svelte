@@ -21,9 +21,7 @@
 {:else if typeof content === "string"}
   {#if content.includes("\n")}
     <span class="prose">
-      <pre class="ml-{nestedLevel * 2}">
-				<code>{content}</code>
-			</pre>
+      <pre class="ml-{nestedLevel * 2}"><code>{content}</code></pre>
     </span>
   {:else}
     <code>{content}</code>

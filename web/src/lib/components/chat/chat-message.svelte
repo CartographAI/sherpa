@@ -14,7 +14,7 @@
     <Avatar class="w-6 h-6 mr-2"><UserRound /></Avatar>
   {/if}
 
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 w-full">
     {#if typeof message.content === "string"}
       <Markdown text={message.content} />
     {:else}
