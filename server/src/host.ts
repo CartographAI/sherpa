@@ -9,8 +9,8 @@ import {
   type LanguageModelV1,
   type ToolResultPart,
 } from "ai";
-import type { BaseClient } from "./baseClient";
-import { createFilesystemClient } from "./filesystemClient";
+import type { BaseClient } from "./mcpTools/baseClient";
+import { createFilesystemClient } from "./mcpTools/filesystemClient";
 
 export async function createHost({ allowedDirectories }: { allowedDirectories: string[] }) {
   const host = new Host();
