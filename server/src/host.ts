@@ -10,45 +10,28 @@ import {
   type ToolResultPart,
 } from "ai";
 import type { BaseClient } from "./baseClient";
-
 import { createFilesystemClient } from "./filesystemClient";
 
-export async function createHost({
-  model,
-  apiKey,
-  allowedDirectories,
-  modelProvider,
-}: {
-  model: string;
-  apiKey: string;
-  allowedDirectories: string[];
-  modelProvider: "Anthropic" | "Gemini";
-}) {
-  let languageModel;
-
-  if (modelProvider === "Anthropic") {
-    const anthropic = createAnthropic({ apiKey });
-    languageModel = anthropic(model);
-  } else if (modelProvider === "Gemini") {
-    const google = createGoogleGenerativeAI({ apiKey });
-    languageModel = google(model);
-  } else {
-    throw new Error("Unsupported model provider");
-  }
-
-  const host = new Host(languageModel);
+export async function createHost({ allowedDirectories }: { allowedDirectories: string[] }) {
+  const host = new Host();
   await host.createClientsServers(allowedDirectories);
   return host;
 }
 
 export class Host {
-  model: LanguageModelV1;
+  model?: LanguageModelV1;
   clients: BaseClient[] = [];
   toolsForModel: Record<string, CoreTool> = {};
   toolsToClientMap: Record<string, BaseClient> = {};
 
-  constructor(model: LanguageModelV1) {
-    this.model = model;
+  setModel({ model, apiKey, modelProvider }: { model: string; apiKey: string; modelProvider: "Anthropic" | "Gemini" }) {
+    if (modelProvider === "Anthropic") {
+      const anthropic = createAnthropic({ apiKey });
+      this.model = anthropic(model);
+    } else if (modelProvider === "Gemini") {
+      const google = createGoogleGenerativeAI({ apiKey });
+      this.model = google(model);
+    }
   }
 
   async createClientsServers(allowedDirectories: string[]): Promise<void> {
@@ -78,6 +61,9 @@ export class Host {
     previousMessages?: CoreMessage[];
     onStepComplete: (message: CoreMessage) => void;
   }): Promise<string> {
+    if (!this.model) {
+      throw new Error("Language model not initialized");
+    }
     if (this.clients.length === 0) {
       throw new Error("No clients connected.");
     }
