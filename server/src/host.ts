@@ -74,7 +74,9 @@ export class Host {
 
     let currentMessages = [...previousMessages];
     if (systemPrompt) currentMessages.push({ role: "system" as const, content: systemPrompt });
-    currentMessages.push({ role: "user" as const, content: userPrompt });
+    const userMessage = { role: "user" as const, content: userPrompt };
+    currentMessages.push(userMessage);
+    onMessage(userMessage);
 
     const lastMessage = currentMessages[currentMessages.length - 1];
     while (lastMessage.role === "user" || lastMessage.role === "tool") {

@@ -71,7 +71,6 @@ app.get("/api/events", (c) => {
 app.post("/api/chat", async (c) => {
   const { userPrompt, previousMessages, model, modelProvider, apiKey } = await c.req.json();
   host.setModel({ model, modelProvider, apiKey });
-  await sendMessageToClient({ role: "user", content: userPrompt });
 
   try {
     await host.processQuery({
