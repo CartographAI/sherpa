@@ -68,6 +68,21 @@ app.get("/api/events", (c) => {
   });
 });
 
+app.get("/api/directory", async (c) => {
+  try {
+    const client = host.toolsToClientMap["list_allowed_directories"];
+    if (!client) {
+      return c.json({ error: "Tool not available" }, 500);
+    }
+
+    const result = await client.callTool("list_allowed_directories", {});
+    return c.json({ directory: (result.content[0].text as string).replace("Allowed directory:\n", "") });
+  } catch (error) {
+    console.error("Error getting directories:", error);
+    return c.json({ error: "Failed to get directories" }, 500);
+  }
+});
+
 app.post("/api/chat", async (c) => {
   const { userPrompt, previousMessages, model, modelProvider, apiKey } = await c.req.json();
   host.setModel({ model, modelProvider, apiKey });
