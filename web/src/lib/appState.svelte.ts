@@ -12,6 +12,7 @@ class ChatState {
   isLoading = $state(false);
   inputMessage = $state("");
   selectedModel = $state(localStorage.getItem("modelId") || defaultModel);
+  sendFiles = $state(false);
 
   constructor() {
     $effect(() => {

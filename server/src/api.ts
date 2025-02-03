@@ -124,6 +124,7 @@ app.post("/api/chat", async (c) => {
       previousMessages,
       onMessage: sendMessageToClient,
       onTextStream: sendTextStreamToClient,
+      userFiles: [],
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {

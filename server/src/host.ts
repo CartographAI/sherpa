@@ -57,12 +57,14 @@ export class Host {
     previousMessages = [],
     onMessage,
     onTextStream,
+    userFiles,
   }: {
     systemPrompt?: string;
     userPrompt: string;
     previousMessages?: CoreMessage[];
     onMessage: (message: CoreMessage) => void;
     onTextStream: (stream: AsyncIterable<string>) => void;
+    userFiles: string[];
   }) {
     if (!this.model) {
       throw new Error("Language model not initialized");

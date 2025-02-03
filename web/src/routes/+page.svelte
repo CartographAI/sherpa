@@ -83,12 +83,43 @@
       return;
     }
     isLoading = true;
+
+    let files: string[] = [];
+    if (chat.sendFiles) {
+      try {
+        const dirResponse = await fetch(API_BASE_URL + "/api/directory");
+        const { directory } = await dirResponse.json();
+
+        const treeResponse = await fetch(API_BASE_URL + `/api/tree?path=${encodeURIComponent(directory)}`);
+        const { tree } = await treeResponse.json();
+
+        function getAllPaths(node) {
+          // Base case: if it's a file, add its path
+          if (node.type === "file") {
+            files.push(node.path);
+          }
+
+          // If the node has children, recursively process them
+          if (node.children && Array.isArray(node.children)) {
+            for (const child of node.children) {
+              getAllPaths(child);
+            }
+          }
+        }
+        getAllPaths(tree);
+      } catch (error) {
+        console.error("Error fetching file tree:", error);
+        toast.error("Failed to fetch file tree", { position: "top-center" });
+      }
+    }
+
     const requestBody = {
       userPrompt: chat.inputMessage,
       previousMessages: chat.messages,
       model: chat.selectedModel,
       modelProvider,
       apiKey,
+      userFiles: files,
     };
     const inputMessageCopy = chat.inputMessage;
     chat.inputMessage = "";
