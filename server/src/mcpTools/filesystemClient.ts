@@ -6,17 +6,17 @@ import { createServer } from "./mcpFilesystem";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 export class FilesystemClient extends BaseClient {
-  allowedDirectories: string[];
+  allowedDirectory: string;
   clientName: string = "mcp-filesystem-client";
 
-  constructor(allowedDirectories: string[]) {
+  constructor(allowedDirectory: string) {
     super();
-    this.allowedDirectories = allowedDirectories;
+    this.allowedDirectory = allowedDirectory;
   }
 
   async connect(): Promise<void> {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    const server = await createServer(this.allowedDirectories);
+    const server = await createServer(this.allowedDirectory);
     server.connect(serverTransport);
 
     const client = new Client(
@@ -53,8 +53,8 @@ export class FilesystemClient extends BaseClient {
   }
 }
 
-export async function createFilesystemClient(allowedDirectories: string[]): Promise<FilesystemClient> {
-  const client = new FilesystemClient(allowedDirectories);
+export async function createFilesystemClient(allowedDirectory: string): Promise<FilesystemClient> {
+  const client = new FilesystemClient(allowedDirectory);
   await client.connect();
   return client;
 }

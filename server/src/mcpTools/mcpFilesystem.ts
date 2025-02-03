@@ -21,7 +21,7 @@ function expandHome(filepath: string): string {
 }
 
 // Security utilities
-async function validatePath(requestedPath: string, normalizedAllowedDirectories: string[]): Promise<string> {
+async function validatePath(requestedPath: string, normalizedAllowedDirectory: string): Promise<string> {
   const expandedPath = expandHome(requestedPath);
   const absolute = path.isAbsolute(expandedPath)
     ? path.resolve(expandedPath)
@@ -30,10 +30,10 @@ async function validatePath(requestedPath: string, normalizedAllowedDirectories:
   const normalizedRequested = normalizePath(absolute);
 
   // Check if path is within allowed directories
-  const isAllowed = normalizedAllowedDirectories.some((dir) => normalizedRequested.startsWith(dir));
+  const isAllowed = normalizedRequested.startsWith(normalizedAllowedDirectory);
   if (!isAllowed) {
     throw new Error(
-      `Access denied - path outside allowed directories: ${absolute} not in ${normalizedAllowedDirectories.join(", ")}`,
+      `Access denied - path outside allowed directories: ${absolute} not in ${normalizedAllowedDirectory}`,
     );
   }
 
@@ -41,7 +41,7 @@ async function validatePath(requestedPath: string, normalizedAllowedDirectories:
   try {
     const realPath = await fs.realpath(absolute);
     const normalizedReal = normalizePath(realPath);
-    const isRealPathAllowed = normalizedAllowedDirectories.some((dir) => normalizedReal.startsWith(dir));
+    const isRealPathAllowed = normalizedReal.startsWith(normalizedAllowedDirectory);
     if (!isRealPathAllowed) {
       throw new Error("Access denied - symlink target outside allowed directories");
     }
@@ -52,7 +52,7 @@ async function validatePath(requestedPath: string, normalizedAllowedDirectories:
     try {
       const realParentPath = await fs.realpath(parentDir);
       const normalizedParent = normalizePath(realParentPath);
-      const isParentAllowed = normalizedAllowedDirectories.some((dir) => normalizedParent.startsWith(dir));
+      const isParentAllowed = normalizedParent.startsWith(normalizedAllowedDirectory);
       if (!isParentAllowed) {
         throw new Error("Access denied - parent directory outside allowed directories");
       }
@@ -77,24 +77,20 @@ const ToolInputSchema = ToolSchema.shape.inputSchema;
 type ToolInput = z.infer<typeof ToolInputSchema>;
 
 // Start server
-export async function createServer(allowedDirectories: string[]) {
+export async function createServer(allowedDirectory: string) {
   // Validate that all directories exist and are accessible
-  await Promise.all(
-    allowedDirectories.map(async (dir) => {
-      try {
-        const stats = await fs.stat(dir);
-        if (!stats.isDirectory()) {
-          console.error(`Error: ${dir} is not a directory`);
-          process.exit(1);
-        }
-      } catch (error) {
-        console.error(`Error accessing directory ${dir}:`, error);
-        process.exit(1);
-      }
-    }),
-  );
+  try {
+    const stats = await fs.stat(allowedDirectory);
+    if (!stats.isDirectory()) {
+      console.error(`Error: ${allowedDirectory} is not a directory`);
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error(`Error accessing directory ${allowedDirectory}:`, error);
+    process.exit(1);
+  }
   // Store allowed directories in normalized form
-  const normalizedAllowedDirectories = allowedDirectories.map((dir) => normalizePath(path.resolve(expandHome(dir))));
+  const normalizedAllowedDirectory = normalizePath(path.resolve(expandHome(allowedDirectory)));
 
   // Server setup
   const server = new Server(
@@ -160,7 +156,7 @@ export async function createServer(allowedDirectories: string[]) {
           const results = await Promise.all(
             parsed.data.paths.map(async (filePath: string) => {
               try {
-                const validPath = await validatePath(filePath, normalizedAllowedDirectories);
+                const validPath = await validatePath(filePath, normalizedAllowedDirectory);
                 const content = await fs.readFile(validPath, "utf-8");
                 let processedContent = content
                   .split("\n")
@@ -182,7 +178,7 @@ export async function createServer(allowedDirectories: string[]) {
           if (!parsed.success) {
             throw new Error(`Invalid arguments for tree: ${parsed.error}`);
           }
-          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectories);
+          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectory);
           const tree = new TreeGenerator({
             maxDepth: parsed.data.maxDepth,
           });
@@ -196,7 +192,7 @@ export async function createServer(allowedDirectories: string[]) {
             content: [
               {
                 type: "text",
-                text: `Allowed directories:\n${normalizedAllowedDirectories.join("\n")}`,
+                text: `Allowed directory:\n${normalizedAllowedDirectory}`,
               },
             ],
           };
@@ -215,7 +211,7 @@ export async function createServer(allowedDirectories: string[]) {
   });
 
   console.error("Secure MCP Filesystem Server running on local transport");
-  console.error("Allowed directories:", normalizedAllowedDirectories);
+  console.error("Allowed directory:", normalizedAllowedDirectory);
 
   return server;
 }

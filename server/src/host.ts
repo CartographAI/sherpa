@@ -13,9 +13,9 @@ import {
 import type { BaseClient } from "./mcpTools/baseClient";
 import { createFilesystemClient } from "./mcpTools/filesystemClient";
 
-export async function createHost({ allowedDirectories }: { allowedDirectories: string[] }) {
+export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
   const host = new Host();
-  await host.createClientsServers(allowedDirectories);
+  await host.createClientsServers(allowedDirectory);
   return host;
 }
 
@@ -35,8 +35,8 @@ export class Host {
     }
   }
 
-  async createClientsServers(allowedDirectories: string[]): Promise<void> {
-    const client = await createFilesystemClient(allowedDirectories);
+  async createClientsServers(allowedDirectory: string): Promise<void> {
+    const client = await createFilesystemClient(allowedDirectory);
     this.clients.push(client);
 
     for (const client of this.clients) {
@@ -119,12 +119,12 @@ export class Host {
       return toolMessage;
     };
 
-    const allowedDirectoriesToolCallPart = {
+    const allowedDirectoryToolCallPart = {
       type: "tool-call" as const,
-      toolCallId: "0_list_allowed_directories",
+      toolCallId: "0_list_allowed_directory",
       toolName: "list_allowed_directories",
     } as ToolCallPart;
-    const allowedDirectoriesToolCallResponse = await processToolCalls([allowedDirectoriesToolCallPart], false);
+    const allowedDirectoryToolCallResponse = await processToolCalls([allowedDirectoryToolCallPart], false);
     const initialTreeToolCall = {
       role: "assistant" as const,
       content: [
@@ -133,10 +133,7 @@ export class Host {
           toolCallId: "0_tree",
           toolName: "tree",
           args: {
-            path: (allowedDirectoriesToolCallResponse?.content[0].result as string).replace(
-              "Allowed directories:\n",
-              "",
-            ),
+            path: (allowedDirectoryToolCallResponse?.content[0].result as string).replace("Allowed directory:\n", ""),
             maxDepth: 3,
           },
         },

@@ -17,17 +17,21 @@ async function main() {
     process.exit(1);
   }
 
-  const allowedDirectories = [];
-  const urlOrDirectory = args[0];
-
-  if (isGitUrl(urlOrDirectory)) {
-    const repoDirectory = await cloneRepository(urlOrDirectory, cacheDirectory);
-    allowedDirectories.push(repoDirectory);
-  } else {
-    allowedDirectories.push(urlOrDirectory);
+  if (args.length > 1) {
+    console.error("Error: Only one directory or git url can be specified at a time.");
+    process.exit(1);
   }
 
-  const host = await createHost({ allowedDirectories });
+  const urlOrDirectory = args[0];
+  let allowedDirectory: string;
+
+  if (isGitUrl(urlOrDirectory)) {
+    allowedDirectory = await cloneRepository(urlOrDirectory, cacheDirectory);
+  } else {
+    allowedDirectory = urlOrDirectory;
+  }
+
+  const host = await createHost({ allowedDirectory });
   serveApi(host);
 }
 
