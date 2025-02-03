@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   jsonSchema,
   streamText,
+  ToolCallPart,
   type CoreMessage,
   type CoreTool,
   type CoreToolMessage,
@@ -79,8 +80,86 @@ export class Host {
     currentMessages.push(userMessage);
     onMessage(userMessage);
 
-    const lastMessage = currentMessages[currentMessages.length - 1];
-    while (lastMessage.role === "user" || lastMessage.role === "tool") {
+    // Process all tool calls and LLM responses
+    const processToolCalls = async (toolCalls: ToolCallPart[], addToMessages: boolean = true) => {
+      if (!toolCalls.length) return null;
+
+      const toolResults = await Promise.all(
+        toolCalls.map(async (toolCall) => {
+          const { toolName, args, toolCallId } = toolCall;
+          const client = this.toolsToClientMap[toolName];
+
+          if (!client) {
+            throw new Error(`Tool ${toolName} not found`);
+          }
+
+          console.log(`[Calling tool ${toolName} with args ${JSON.stringify(args)}]`);
+          const toolResult = await client.callTool(toolName, args);
+
+          return {
+            type: "tool-result",
+            toolCallId,
+            toolName,
+            result: toolResult.content[0].text,
+          } as ToolResultPart;
+        }),
+      );
+
+      const toolMessage: CoreToolMessage = {
+        role: "tool",
+        content: toolResults,
+      };
+
+      console.log("toolMessage :>>", toolMessage);
+      if (addToMessages) {
+        currentMessages.push(toolMessage);
+        onMessage(toolMessage);
+      }
+
+      return toolMessage;
+    };
+
+    const allowedDirectoriesToolCallPart = {
+      type: "tool-call" as const,
+      toolCallId: "0_list_allowed_directories",
+      toolName: "list_allowed_directories",
+    } as ToolCallPart;
+    const allowedDirectoriesToolCallResponse = await processToolCalls([allowedDirectoriesToolCallPart], false);
+    const initialTreeToolCall = {
+      role: "assistant" as const,
+      content: [
+        {
+          type: "tool-call" as const,
+          toolCallId: "0_tree",
+          toolName: "tree",
+          args: {
+            path: (allowedDirectoriesToolCallResponse?.content[0].result as string).replace(
+              "Allowed directories:\n",
+              "",
+            ),
+            maxDepth: 3,
+          },
+        },
+      ],
+    };
+    currentMessages.push(initialTreeToolCall);
+    onMessage(initialTreeToolCall);
+
+    // Main conversation loop
+    while (true) {
+      // Process any pending tool calls from the last message
+      const lastMessage = currentMessages[currentMessages.length - 1];
+      if (lastMessage.role === "assistant" && Array.isArray(lastMessage.content)) {
+        const toolCalls = lastMessage.content.filter((content) => content.type === "tool-call");
+
+        await processToolCalls(toolCalls);
+      }
+      // Break if the last message is from the assistant and doesn't contain tool calls
+      if (lastMessage.role === "assistant" && !Array.isArray(lastMessage.content)) {
+        break;
+      }
+
+      // Get LLM response
       console.log("calling model");
       const result = streamText({
         model: this.model,
@@ -94,45 +173,16 @@ export class Host {
       const assistantMessages = (await result.response).messages;
       console.log("assistantMessages :>>", assistantMessages);
 
-      // Add assistant message(s) to the conversation
+      // Add assistant messages to conversation
       currentMessages.push(...assistantMessages);
       assistantMessages.forEach(onMessage);
 
-      // Handle tool calls
-      const toolCalls = await result.toolCalls;
-      if (toolCalls && toolCalls.length > 0) {
-        const toolResults = await Promise.all(
-          toolCalls.map(async (toolCall) => {
-            const toolName = toolCall.toolName;
-            const toolArgs = toolCall.args;
-
-            const client = this.toolsToClientMap[toolName];
-            if (!client) {
-              throw new Error(`Tool ${toolName} not found`);
-            }
-
-            console.log(`[Calling tool ${toolName} with args ${JSON.stringify(toolArgs)}]`);
-            let toolResult = await client.callTool(toolName, toolArgs);
-
-            return {
-              type: "tool-result",
-              toolCallId: toolCall.toolCallId,
-              toolName: toolCall.toolName,
-              result: toolResult.content[0].text,
-            } as ToolResultPart;
-          }),
-        );
-
-        const toolMessage: CoreToolMessage = {
-          role: "tool",
-          content: toolResults,
-        };
-        console.log("toolMessage :>>", toolMessage);
-        currentMessages.push(toolMessage);
-        onMessage(toolMessage);
-      } else {
-        break; // Exit loop if no tool calls
+      // Process any tool calls from the LLM
+      const llmToolCalls = await result.toolCalls;
+      if (!llmToolCalls?.length) {
+        break;
       }
+      await processToolCalls(llmToolCalls);
     }
 
     console.log("all messages :>>", currentMessages);
