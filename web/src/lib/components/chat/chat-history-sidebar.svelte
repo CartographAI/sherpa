@@ -8,7 +8,7 @@
   const chatHistory = useChatHistory();
 </script>
 
-<Sidebar.Provider style="--sidebar-width: 300px" class="fixed w-fit" {open}>
+<Sidebar.Provider style="--sidebar-width: 300px" class="fixed w-fit z-10" {open}>
   <Sidebar.Root side="left" variant="floating" class="p-2 pt-16">
     <Sidebar.Header class="flex flex-row">
       <Sidebar.GroupLabel class="flex w-full justify-between">
@@ -25,7 +25,7 @@
             {#each chatHistory.chats as chat}
               <Sidebar.MenuItem>
                 <Sidebar.MenuButton class="">
-                  <a href={`/chats/${chat.id}`} class="w-full overflow-ellipsis overflow-hidden text-nowrap">
+                  <a href={`/chat/${chat.id}`} class="w-full overflow-ellipsis overflow-hidden text-nowrap">
                     {chat.snippet}
                   </a>
                 </Sidebar.MenuButton>

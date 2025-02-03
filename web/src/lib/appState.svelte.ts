@@ -14,7 +14,7 @@ interface StoredChat {
 }
 
 class ChatState {
-  id = $state(crypto.randomUUID());
+  id: string = $state(crypto.randomUUID());
   messages: CoreMessage[] = $state([]);
   isLoading = $state(false);
   inputMessage = $state("");
@@ -30,6 +30,12 @@ class ChatState {
   get lastMessage() {
     if (this.messages.length === 0) return null;
     return this.messages[this.messages.length - 1];
+  }
+
+  loadChatState(storedChat: StoredChat) {
+    this.id = storedChat.id;
+    this.messages = storedChat.messages;
+    this.isLoading = false;
   }
 
   reset() {
