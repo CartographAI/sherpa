@@ -1,11 +1,13 @@
+import * as path from "path";
+
+import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { CoreMessage } from "ai";
-import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
-import * as path from "path";
+import { CoreMessage } from "ai";
+
 import { Host } from "./host";
 import { SYSTEM_PROMPT } from "./prompts";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree";
