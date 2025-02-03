@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { createChatState, createConfigState } from "$lib/appState.svelte";
+  import { createChatHistoryState, createChatState, createConfigState } from "$lib/appState.svelte";
+  import ChatHistorySidebar from "$lib/components/chat/chat-history-sidebar.svelte";
   import ChatMessage from "$lib/components/chat/chat-message.svelte";
   import ConfigSidebar from "$lib/components/chat/config-sidebar.svelte";
   import MessageInput from "$lib/components/chat/message-input.svelte";
@@ -7,16 +8,18 @@
   import { Button } from "$lib/components/ui/button";
   import { getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
+  import { History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
 
   let isLoading: boolean = $state(false);
+  let isHistoryPanelOpen = $state(false);
   let openPanel: "config" | "scratch" | null = $state(null);
 
   const chat = createChatState();
+  const chatHistory = createChatHistoryState();
   const config = createConfigState();
 
   $effect(() => {
@@ -139,6 +142,14 @@
 </script>
 
 <div class="flex gap-2">
+  <div>
+    <div class="fixed top-0 left-0 p-3 z-20">
+      <Button variant="secondary" onclick={() => (isHistoryPanelOpen = !isHistoryPanelOpen)}>
+        <History />Chats
+      </Button>
+    </div>
+    <ChatHistorySidebar bind:open={isHistoryPanelOpen} />
+  </div>
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
     {#if chat.messages.length > 0}
       <div class="space-y-2">
@@ -157,7 +168,10 @@
   <div class="flex flex-col h-svh">
     <div class="w-[250px]">
       <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
-        <Button onclick={() => (chat.messages = [])}>
+        <Button variant="secondary" onclick={() => chatHistory.addChat(chat)} disabled={chat.messages.length === 0}>
+          Save chat
+        </Button>
+        <Button onclick={() => chat.reset()}>
           <Plus />New chat
         </Button>
         <Button variant="secondary" onclick={() => togglePanel("scratch")}>
