@@ -8,6 +8,7 @@ import { SSEStreamingApi, streamSSE } from "hono/streaming";
 import * as path from "path";
 import { Host } from "./host";
 import { SYSTEM_PROMPT } from "./prompts";
+import { TreeGenerator, TreeNode } from "./mcpTools/tree";
 
 let host: Host;
 const app = new Hono();
@@ -80,6 +81,33 @@ app.get("/api/directory", async (c) => {
   } catch (error) {
     console.error("Error getting directories:", error);
     return c.json({ error: "Failed to get directories" }, 500);
+  }
+});
+
+app.get("/api/tree", async (c) => {
+  try {
+    const client = host.toolsToClientMap["tree"];
+    if (!client) {
+      return c.json({ error: "Tool not available" }, 500);
+    }
+
+    const { path, maxDepth } = c.req.query();
+
+    if (!path) {
+      return c.json({ error: "Path parameter is required" }, 400);
+    }
+
+    // Create a new TreeGenerator instance with the maxDepth option if provided
+    const treeGenerator = new TreeGenerator({
+      maxDepth: maxDepth ? parseInt(maxDepth) : undefined,
+    });
+
+    const treeStructure: TreeNode = treeGenerator.generateTree(path);
+
+    return c.json({ tree: treeStructure });
+  } catch (error) {
+    console.error("Error getting tree structure:", error);
+    return c.json({ error: "Failed to get tree structure" }, 500);
   }
 });
 
