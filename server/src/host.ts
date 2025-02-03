@@ -73,7 +73,8 @@ export class Host {
     console.log("systemPrompt :>>", systemPrompt);
 
     let currentMessages = [...previousMessages];
-    if (systemPrompt) currentMessages.push({ role: "system" as const, content: systemPrompt });
+    if (systemPrompt && currentMessages.length === 0)
+      currentMessages.push({ role: "system" as const, content: systemPrompt });
     const userMessage = { role: "user" as const, content: userPrompt };
     currentMessages.push(userMessage);
     onMessage(userMessage);

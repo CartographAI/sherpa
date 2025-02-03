@@ -74,7 +74,7 @@ app.post("/api/chat", async (c) => {
 
   try {
     await host.processQuery({
-      systemPrompt: previousMessages.length === 0 ? SYSTEM_PROMPT : undefined,
+      systemPrompt: SYSTEM_PROMPT,
       userPrompt,
       previousMessages,
       onMessage: sendMessageToClient,
