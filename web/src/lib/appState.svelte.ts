@@ -18,6 +18,11 @@ class ChatState {
       localStorage.setItem("modelId", this.selectedModel);
     });
   }
+
+  get lastMessage() {
+    if (this.messages.length === 0) return null;
+    return this.messages[this.messages.length - 1];
+  }
 }
 
 export function createChatState(): ChatState {

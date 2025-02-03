@@ -1,8 +1,8 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
-  generateText,
   jsonSchema,
+  streamText,
   type CoreMessage,
   type CoreTool,
   type CoreToolMessage,
@@ -54,13 +54,15 @@ export class Host {
     systemPrompt,
     userPrompt,
     previousMessages = [],
-    onStepComplete,
+    onMessage,
+    onTextStream,
   }: {
     systemPrompt?: string;
     userPrompt: string;
     previousMessages?: CoreMessage[];
-    onStepComplete: (message: CoreMessage) => void;
-  }): Promise<string> {
+    onMessage: (message: CoreMessage) => void;
+    onTextStream: (stream: AsyncIterable<string>) => void;
+  }) {
     if (!this.model) {
       throw new Error("Language model not initialized");
     }
@@ -73,34 +75,31 @@ export class Host {
     let currentMessages = [...previousMessages];
     if (systemPrompt) currentMessages.push({ role: "system" as const, content: systemPrompt });
     currentMessages.push({ role: "user" as const, content: userPrompt });
-    let finalText: string[] = [userPrompt];
 
     const lastMessage = currentMessages[currentMessages.length - 1];
     while (lastMessage.role === "user" || lastMessage.role === "tool") {
       console.log("calling model");
-      const response = await generateText({
+      const result = streamText({
         model: this.model,
         maxTokens: 8000,
         maxSteps: 20,
         messages: currentMessages,
         tools: this.toolsForModel,
       });
-      const assistantMessages = response.response.messages;
+
+      onTextStream(result.textStream);
+      const assistantMessages = (await result.response).messages;
       console.log("assistantMessages :>>", assistantMessages);
 
       // Add assistant message(s) to the conversation
       currentMessages.push(...assistantMessages);
-      assistantMessages.forEach(onStepComplete);
-
-      // Add the model's text response to finalText
-      if (response.text) {
-        finalText.push(response.text);
-      }
+      assistantMessages.forEach(onMessage);
 
       // Handle tool calls
-      if (response.toolCalls && response.toolCalls.length > 0) {
+      const toolCalls = await result.toolCalls;
+      if (toolCalls && toolCalls.length > 0) {
         const toolResults = await Promise.all(
-          response.toolCalls.map(async (toolCall) => {
+          toolCalls.map(async (toolCall) => {
             const toolName = toolCall.toolName;
             const toolArgs = toolCall.args;
 
@@ -127,14 +126,13 @@ export class Host {
         };
         console.log("toolMessage :>>", toolMessage);
         currentMessages.push(toolMessage);
-        onStepComplete(toolMessage);
+        onMessage(toolMessage);
       } else {
         break; // Exit loop if no tool calls
       }
     }
 
     console.log("all messages :>>", currentMessages);
-    return finalText.join("\n");
   }
 
   async cleanup(): Promise<void> {

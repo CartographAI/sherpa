@@ -27,11 +27,30 @@
     console.log("creating event source");
     const eventSource = new EventSource(API_BASE_URL + "/api/events");
 
+    // Handle "message" events - this expects event.data to have type of CoreMessage.
+    // It can be a user message, assistant message or tool message.
     eventSource.onmessage = (event) => {
       console.log("received sse message:", event);
       const eventData = JSON.parse(event.data) as CoreMessage;
-      chat.messages.push(eventData);
+      if (eventData.role === "assistant" && chat.lastMessage?.role === "assistant") {
+        // Replace last assistant message (received through streaming) with this full message
+        chat.lastMessage.content = eventData.content;
+      } else {
+        chat.messages.push(eventData);
+      }
     };
+
+    // Handle "stream" events for streaming responses from the model. This expects event.data to be a string.
+    // This is only used for assistant messages.
+    eventSource.addEventListener("stream", (event) => {
+      console.log("received sse stream event:", event);
+      const textChunk = event.data;
+      if (chat.lastMessage?.role === "assistant") {
+        chat.messages[chat.messages.length - 1].content += textChunk;
+      } else {
+        chat.messages.push({ role: "assistant", content: textChunk });
+      }
+    });
 
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);

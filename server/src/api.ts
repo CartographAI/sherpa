@@ -27,6 +27,15 @@ async function sendMessageToClient(data: CoreMessage) {
   });
 }
 
+async function sendTextStreamToClient(stream: AsyncIterable<string>) {
+  for await (const textPart of stream) {
+    await clients[clientId].stream.writeSSE({
+      data: textPart,
+      event: "stream",
+    });
+  }
+}
+
 function uuid() {
   return crypto.randomUUID();
 }
@@ -69,7 +78,8 @@ app.post("/api/chat", async (c) => {
       systemPrompt: previousMessages.length === 0 ? SYSTEM_PROMPT : undefined,
       userPrompt,
       previousMessages,
-      onStepComplete: sendMessageToClient,
+      onMessage: sendMessageToClient,
+      onTextStream: sendTextStreamToClient,
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
