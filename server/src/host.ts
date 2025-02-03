@@ -121,31 +121,52 @@ export class Host {
       return toolMessage;
     };
 
-    // only force tree tool call for the first message in chat
+    // only force tool call for the first message in chat
     // length === 2 (system + user)
     if (currentMessages.length === 2) {
-      const allowedDirectoryToolCallPart = {
-        type: "tool-call" as const,
-        toolCallId: "0_list_allowed_directory",
-        toolName: "list_allowed_directories",
-      } as ToolCallPart;
-      const allowedDirectoryToolCallResponse = await processToolCalls([allowedDirectoryToolCallPart], false);
-      const initialTreeToolCall = {
-        role: "assistant" as const,
-        content: [
-          {
-            type: "tool-call" as const,
-            toolCallId: "0_tree",
-            toolName: "tree",
-            args: {
-              path: (allowedDirectoryToolCallResponse?.content[0].result as string).replace("Allowed directory:\n", ""),
-              maxDepth: 3,
+      if (userFiles.length > 0) {
+        const userFilesToolCall = {
+          role: "assistant" as const,
+          content: [
+            {
+              type: "tool-call" as const,
+              toolCallId: "0_read_files",
+              toolName: "read_files",
+              args: {
+                paths: userFiles,
+              },
             },
-          },
-        ],
-      };
-      currentMessages.push(initialTreeToolCall);
-      onMessage(initialTreeToolCall);
+          ],
+        };
+        currentMessages.push(userFilesToolCall);
+        onMessage(userFilesToolCall);
+      } else {
+        const allowedDirectoryToolCallPart = {
+          type: "tool-call" as const,
+          toolCallId: "0_list_allowed_directory",
+          toolName: "list_allowed_directories",
+        } as ToolCallPart;
+        const allowedDirectoryToolCallResponse = await processToolCalls([allowedDirectoryToolCallPart], false);
+        const initialTreeToolCall = {
+          role: "assistant" as const,
+          content: [
+            {
+              type: "tool-call" as const,
+              toolCallId: "0_tree",
+              toolName: "tree",
+              args: {
+                path: (allowedDirectoryToolCallResponse?.content[0].result as string).replace(
+                  "Allowed directory:\n",
+                  "",
+                ),
+                maxDepth: 3,
+              },
+            },
+          ],
+        };
+        currentMessages.push(initialTreeToolCall);
+        onMessage(initialTreeToolCall);
+      }
     }
 
     // Main conversation loop

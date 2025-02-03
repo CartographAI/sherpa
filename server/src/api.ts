@@ -114,7 +114,7 @@ app.get("/api/tree", async (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { userPrompt, previousMessages, model, modelProvider, apiKey } = await c.req.json();
+  const { userPrompt, previousMessages, model, modelProvider, apiKey, userFiles } = await c.req.json();
   host.setModel({ model, modelProvider, apiKey });
 
   try {
@@ -124,7 +124,7 @@ app.post("/api/chat", async (c) => {
       previousMessages,
       onMessage: sendMessageToClient,
       onTextStream: sendTextStreamToClient,
-      userFiles: [],
+      userFiles: userFiles,
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
