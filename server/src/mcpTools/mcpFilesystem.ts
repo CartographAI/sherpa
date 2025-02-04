@@ -70,7 +70,7 @@ const ReadFilesArgsSchema = z.object({
 
 const TreeArgsSchema = z.object({
   path: z.string(),
-  maxDepth: z.number().optional(),
+  maxDepth: z.number().nullable(),
 });
 
 const ToolInputSchema = ToolSchema.shape.inputSchema;
@@ -138,6 +138,7 @@ export async function createServer(allowedDirectory: string) {
             type: "object",
             properties: {},
             required: [],
+            additionalProperties: false,
           },
         },
       ],
