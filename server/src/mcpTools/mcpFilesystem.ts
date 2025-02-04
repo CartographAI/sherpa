@@ -112,10 +112,10 @@ export async function createServer(allowedDirectory: string) {
         {
           name: "read_files",
           description:
-            "Read the contents of multiple files simultaneously. This is more " +
-            "efficient than reading files one by one when you need to analyze " +
-            "or compare multiple files. Each file's content is returned with its " +
-            "path as a reference. Failed reads for individual files won't stop " +
+            "Read the contents of one or more multiple files. " +
+            "Use this to analyze file contents. " +
+            "Each file's content is returned with its path as a reference. " +
+            "Failed reads for individual files won't stop " +
             "the entire operation. Only works within allowed directories.",
           inputSchema: zodToJsonSchema(ReadFilesArgsSchema) as ToolInput,
         },
@@ -124,6 +124,7 @@ export async function createServer(allowedDirectory: string) {
           description:
             "Generate a tree-style visualization of a directory structure. " +
             "Shows the hierarchy of files and directories in a readable format. " +
+            "Use this to understand what files are available. " +
             "Optionally specify maxDepth to limit the depth of the tree. " +
             "Only works within allowed directories.",
           inputSchema: zodToJsonSchema(TreeArgsSchema) as ToolInput,
