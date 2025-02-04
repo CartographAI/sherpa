@@ -190,17 +190,24 @@
     };
     const inputMessageCopy = chat.inputMessage;
     chat.inputMessage = "";
-    const response = await fetch(API_BASE_URL + "/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    });
-    isLoading = false;
-    if (response.status === 202) {
-    } else {
+    try {
+      const response = await fetch(API_BASE_URL + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      isLoading = false;
+      if (response.status === 202) {
+      } else {
+        chat.inputMessage = inputMessageCopy;
+        const resJson = await response.json();
+        toast.error("An error occurred: " + resJson.message, { position: "top-center" });
+      }
+    } catch (error) {
+      isLoading = false;
       chat.inputMessage = inputMessageCopy;
-      const resJson = await response.json();
-      toast.error("An error occurred: " + resJson.message, { position: "top-center" });
+      console.error("Error making POST /api/chat call:", error);
+      toast.error("An error occurred, please refresh the page and try again", { position: "top-center" });
     }
   }
 </script>
