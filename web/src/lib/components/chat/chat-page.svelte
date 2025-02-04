@@ -110,10 +110,18 @@
     });
   }
 
+  async function getWorkingDirectory() {
+    const dirResponse = await fetch(API_BASE_URL + "/api/directory");
+    const { directory } = await dirResponse.json();
+    if (!chat.workingDirectory) chat.workingDirectory = directory;
+  }
+
   onMount(() => {
     connectionState = "connecting";
     eventSource = new EventSource(API_BASE_URL + "/api/events");
     setupEventListeners(eventSource);
+
+    getWorkingDirectory();
 
     return () => {
       if (eventSource) {
@@ -155,10 +163,9 @@
     let files: string[] = [];
     if (chat.sendFiles) {
       try {
-        const dirResponse = await fetch(API_BASE_URL + "/api/directory");
-        const { directory } = await dirResponse.json();
+        if (!chat.workingDirectory) throw new Error("No working directory");
 
-        const treeResponse = await fetch(API_BASE_URL + `/api/tree?path=${encodeURIComponent(directory)}`);
+        const treeResponse = await fetch(API_BASE_URL + `/api/tree?path=${encodeURIComponent(chat.workingDirectory)}`);
         const { tree } = await treeResponse.json();
 
         function getAllPaths(node) {
@@ -226,7 +233,17 @@
 
   <!-- Main chat interface -->
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
-    {#if chat.messages.length > 0}
+    {#if chat.messages.length === 0}
+      <div class="text-muted-foreground p-2">
+        Hi there! I'm Sherpa, your friendly codebase guide. 👋<br />
+        I'm here to help you understand this codebase and assist with code-related questions.<br /><br />
+        You can ask me to explain code, suggest improvements, or help with development tasks.<br />
+        Just note that I can only read files in <span class="text-sm font-medium">{chat.workingDirectory}</span> - I
+        can't modify any files directly.<br /><br />
+        What would you like to explore today?
+      </div>
+    {:else}
+      <div class="text-sm font-medium pt-2">Working directory: {chat.workingDirectory}</div>
       <div class="space-y-2">
         {#each chat.messages as message}
           <ChatMessage {message} />
@@ -248,10 +265,12 @@
   <div class="flex flex-col h-svh">
     <div class="w-[250px]">
       <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
-        <Button variant="secondary" onclick={() => chatHistory.addChat(chat)} disabled={chat.messages.length === 0}>
-          Save chat
-        </Button>
-        <Button href="/" onclick={() => chat.reset()}>
+        <Button
+          href="/"
+          onclick={() => {
+            if (!chatId) chat.reset();
+          }}
+        >
           <Plus />New chat
         </Button>
         <Button variant="secondary" onclick={() => togglePanel("scratch")}>

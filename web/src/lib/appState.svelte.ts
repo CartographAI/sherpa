@@ -13,6 +13,7 @@ interface StoredChat {
   id: string;
   snippet: string;
   messages: CoreMessage[];
+  workingDirectory: string | null;
 }
 
 class ChatState {
@@ -21,6 +22,7 @@ class ChatState {
   isLoading = $state(false);
   inputMessage = $state("");
   selectedModel = $state(localStorage.getItem("modelId") || defaultModel);
+  workingDirectory: string | null = $state(null);
   sendFiles = $state(false);
 
   constructor() {
@@ -38,6 +40,7 @@ class ChatState {
     this.id = storedChat.id;
     this.messages = storedChat.messages;
     this.isLoading = false;
+    this.workingDirectory = storedChat.workingDirectory;
   }
 
   reset() {
@@ -89,6 +92,7 @@ class ChatHistoryState {
       id: chat.id,
       snippet: getSnippet(chat.messages),
       messages: chat.messages,
+      workingDirectory: chat.workingDirectory,
     };
     this.chats.unshift(storedChat);
   }
@@ -104,6 +108,7 @@ class ChatHistoryState {
         id: chat.id,
         snippet: existingChat.snippet.length > 10 ? existingChat.snippet : getSnippet(chat.messages),
         messages: chat.messages,
+        workingDirectory: chat.workingDirectory,
       };
 
       this.chats[existingIndex] = storedChat;
