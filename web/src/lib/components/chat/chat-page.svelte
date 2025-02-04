@@ -9,7 +9,7 @@
   import { getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
   import { History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { toast } from "svelte-sonner";
 
   const API_BASE_URL = "http://localhost:3031";
@@ -24,11 +24,9 @@
   const chatHistory = createChatHistoryState();
   const config = createConfigState();
 
-  $inspect("chatId", chatId);
-
   $effect(() => {
     if (chatId) {
-      const retrievedChat = chatHistory.getChat(chatId);
+      const retrievedChat = untrack(() => chatHistory.getChat(chatId));
       if (retrievedChat) chat.loadChatState(retrievedChat);
     } else {
       chat.reset();
@@ -55,6 +53,7 @@
       } else {
         chat.messages.push(eventData);
       }
+      chatHistory.updateChat(chat);
     };
 
     // Handle "stream" events for streaming responses from the model. This expects event.data to be a string.

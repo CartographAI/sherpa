@@ -24,10 +24,12 @@
           <Sidebar.Menu>
             {#each chatHistory.chats as chat}
               <Sidebar.MenuItem>
-                <Sidebar.MenuButton class="">
-                  <a href={`/chat/${chat.id}`} class="w-full overflow-ellipsis overflow-hidden text-nowrap">
-                    {chat.snippet}
-                  </a>
+                <Sidebar.MenuButton class="w-full overflow-ellipsis overflow-hidden text-nowrap">
+                  {#snippet child({ props })}
+                    <a href={`/chat/${chat.id}`} {...props}>
+                      <span>{chat.snippet}</span>
+                    </a>
+                  {/snippet}
                 </Sidebar.MenuButton>
               </Sidebar.MenuItem>
             {/each}

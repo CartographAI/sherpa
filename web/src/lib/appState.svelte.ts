@@ -54,6 +54,25 @@ export function useChat(): ChatState {
   return getContext("chat");
 }
 
+// Gets first 50 characters of the first non-empty assistant text message
+function getSnippet(messages: CoreMessage[]): string {
+  for (const message of messages) {
+    if (message.role === "assistant" && message.content) {
+      const content = message.content;
+      if (typeof content === "string" && content.trim() !== "") {
+        return content.slice(0, 50);
+      } else if (Array.isArray(content)) {
+        for (const part of content) {
+          if (part.type === "text" && part.text && part.text.trim() !== "") {
+            return part.text.slice(0, 50);
+          }
+        }
+      }
+    }
+  }
+  return "New chat";
+}
+
 class ChatHistoryState {
   chats: StoredChat[] = $state(JSON.parse(localStorage.getItem("chatHistory") || "[]"));
 
@@ -64,19 +83,29 @@ class ChatHistoryState {
   }
 
   addChat(chat: ChatState) {
-    let snippet: string;
-    const assistantMessageContent = chat.messages.find((m) => m.role === "assistant")?.content;
-    if (assistantMessageContent == undefined) snippet = "New chat";
-    else if (typeof assistantMessageContent === "string") snippet = assistantMessageContent.slice(0, 50);
-    else {
-      snippet = assistantMessageContent.find((part) => part.type === "text")?.text.slice(0, 50) ?? "New chat";
-    }
     const storedChat: StoredChat = {
       id: chat.id,
-      snippet: snippet,
+      snippet: getSnippet(chat.messages),
       messages: chat.messages,
     };
     this.chats.unshift(storedChat);
+  }
+
+  updateChat(chat: ChatState) {
+    const existingIndex = this.chats.findIndex((c) => c.id === chat.id);
+
+    if (existingIndex === -1) {
+      this.addChat(chat);
+    } else {
+      const existingChat = this.chats[existingIndex];
+      const storedChat: StoredChat = {
+        id: chat.id,
+        snippet: existingChat.snippet.length > 10 ? existingChat.snippet : getSnippet(chat.messages),
+        messages: chat.messages,
+      };
+
+      this.chats[existingIndex] = storedChat;
+    }
   }
 
   getChat(id: string) {
