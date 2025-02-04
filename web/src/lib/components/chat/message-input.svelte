@@ -1,22 +1,45 @@
 <script lang="ts">
   import { useChat } from "$lib/appState.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { Switch } from "$lib/components/ui/switch";
   import { Label } from "$lib/components/ui/label";
   import * as Select from "$lib/components/ui/select/index.js";
+  import { Switch } from "$lib/components/ui/switch";
   import { Textarea } from "$lib/components/ui/textarea";
   import { getNameForModelId, modelConfig } from "$lib/config";
 
-  let { handleSubmit }: { handleSubmit: (event: SubmitEvent) => void } = $props();
+  let { handleSubmit }: { handleSubmit: () => void } = $props();
 
   const chat = useChat();
   const modelSelectContent = $derived(getNameForModelId(chat.selectedModel) ?? "Select a model");
+
+  function handleKeyDown(event: KeyboardEvent) {
+    // Check for Command+Enter (on Mac) or Ctrl+Enter (on Windows/Linux)
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+
+      if (chat.inputMessage.trim() && !chat.isLoading) {
+        handleSubmit();
+      }
+    }
+  }
 </script>
 
-<form onsubmit={handleSubmit} class="flex flex-col gap-1">
+<form
+  onsubmit={(event) => {
+    event.preventDefault();
+    handleSubmit();
+  }}
+  class="flex flex-col gap-1"
+>
   <div class="flex">
-    <Textarea placeholder="Type your message..." name="message" bind:value={chat.inputMessage} class="flex-grow mr-2" />
-    <Button type="submit" disabled={chat.isLoading}>Send</Button>
+    <Textarea
+      placeholder="Type your message..."
+      name="message"
+      bind:value={chat.inputMessage}
+      onkeydown={handleKeyDown}
+      class="flex-grow mr-2"
+    />
+    <Button type="submit" disabled={chat.isLoading || chat.inputMessage.trim() === ""}>Send</Button>
   </div>
   <div class="flex items-center gap-2">
     <Select.Root type="single" bind:value={chat.selectedModel}>
@@ -36,6 +59,6 @@
       </Select.Content>
     </Select.Root>
     <Label for="readFiles">Read all files</Label>
-    <Switch bind:checked={chat.sendFiles} id="readFiles"/>
+    <Switch bind:checked={chat.sendFiles} id="readFiles" />
   </div>
 </form>

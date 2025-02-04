@@ -127,9 +127,7 @@
     else openPanel = panel;
   }
 
-  async function sendMessage(event: SubmitEvent) {
-    event.preventDefault();
-
+  async function sendMessage() {
     const modelProvider = getProviderForModelId(chat.selectedModel)!;
     const apiKey = modelProvider === "Anthropic" ? config.apiKeys.anthropic : config.apiKeys.gemini;
     if (!apiKey) {
