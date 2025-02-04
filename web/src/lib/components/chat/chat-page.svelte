@@ -22,6 +22,7 @@
   const chat = createChatState();
   const chatHistory = createChatHistoryState();
   const config = createConfigState();
+  let currentAllowedDirectory: string | null = $state(null);
 
   let eventSource: EventSource | null;
   let connectionState: "connecting" | "connected" | "disconnected" = $state("connecting");
@@ -113,6 +114,7 @@
   async function getWorkingDirectory() {
     const dirResponse = await fetch(API_BASE_URL + "/api/directory");
     const { directory } = await dirResponse.json();
+    currentAllowedDirectory = directory;
     if (!chat.workingDirectory) chat.workingDirectory = directory;
   }
 
@@ -258,7 +260,19 @@
       <div class="flex gap-2"><CircleAlert /><span>Not connected to server</span></div>
     {/if}
 
-    <MessageInput handleSubmit={sendMessage} />
+    {#if currentAllowedDirectory === chat.workingDirectory}
+      <MessageInput handleSubmit={sendMessage} />
+    {:else}
+      <div class="flex gap-2">
+        <CircleAlert />
+        <span>
+          Cannot continue chat because this chat's working directory
+          <span class="text-sm font-medium pt-2">{chat.workingDirectory}</span>
+          is different from Sherpa's current working directory
+          <span class="text-sm font-medium pt-2">{currentAllowedDirectory}</span>.
+        </span>
+      </div>
+    {/if}
   </div>
 
   <!-- Right buttons and sidebar -->
