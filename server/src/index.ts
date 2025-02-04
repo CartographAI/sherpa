@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { serveApi } from "./api";
-import { createHost } from "./host";
-import os from "os";
-import path from "path";
-import { cloneRepository, isGitUrl } from "./utils/git";
+import os from "node:os";
+import path from "node:path";
+import open from "open";
+import { serveApi } from "./api.js";
+import { createHost } from "./host.js";
+import { cloneRepository, isGitUrl } from "./utils/git.js";
 
 const cacheDirectory = path.join(os.homedir(), ".cache", "sherpa");
 
@@ -33,9 +34,7 @@ async function main() {
 
   const host = await createHost({ allowedDirectory });
   serveApi(host);
-
-  const open = await import("open");
-  open.default("http://localhost:3031");
+  await open("http://localhost:3031");
 }
 
 main();

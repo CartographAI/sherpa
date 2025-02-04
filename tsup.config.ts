@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   publicDir: "web/dist/",
-  format: ["cjs"],
+  format: ["esm"],
 });

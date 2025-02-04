@@ -1,16 +1,17 @@
-import * as path from "path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { CoreMessage } from "ai";
+import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
-import { CoreMessage } from "ai";
 
-import { Host } from "./host";
-import { SYSTEM_PROMPT } from "./prompts";
-import { TreeGenerator, TreeNode } from "./mcpTools/tree";
+import { Host } from "./host.js";
+import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
+import { SYSTEM_PROMPT } from "./prompts.js";
 
 let host: Host;
 const app = new Hono();
@@ -138,6 +139,7 @@ app.post("/api/chat", async (c) => {
 // Hono expects the root/path in serveStatic to be relative to the working directory
 // where this file is being executed from. This finds the relative path from the working directory
 // to the parent folder of this file, then we can use it to point to the web build files.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const relativePathToScript = path.relative(process.cwd(), __dirname);
 
 app.get("/", serveStatic({ path: `${relativePathToScript}/web/index.html` }));

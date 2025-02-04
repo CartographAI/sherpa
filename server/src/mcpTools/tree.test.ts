@@ -1,6 +1,6 @@
-import { TreeGenerator } from "./tree";
-import { describe, beforeEach, test, expect, mock } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Volume } from "memfs";
+import { TreeGenerator } from "./tree.js";
 
 describe("TreeGenerator", () => {
   let treeGenerator: TreeGenerator;

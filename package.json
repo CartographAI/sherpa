@@ -2,9 +2,9 @@
   "name": "@cartographai/sherpa",
   "version": "0.0.2",
   "type": "module",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "bin": {
-    "sherpa": "dist/index.cjs"
+    "sherpa": "dist/index.js"
   },
   "files": ["dist"],
   "scripts": {
@@ -13,8 +13,8 @@
     "build:server": "cd server && bun install && cd ../ && tsup",
     "clean": "rimraf web/dist dist",
     "dev:web": "cd web && bun run dev",
-    "dev:server": "tsup && node dist/index.cjs",
-    "start": "node dist/index.cjs"
+    "dev:server": "tsup && node dist/index.js",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.0",

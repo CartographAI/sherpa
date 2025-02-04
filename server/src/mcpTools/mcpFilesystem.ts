@@ -6,7 +6,7 @@ import * as path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-import { TreeGenerator } from "./tree";
+import { TreeGenerator } from "./tree.js";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {

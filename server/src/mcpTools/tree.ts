@@ -1,6 +1,6 @@
-import * as fs from "fs";
-import * as path from "path";
 import ignore from "ignore";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 interface TreeOptions {
   maxDepth?: number;
@@ -228,4 +228,4 @@ export class TreeGenerator {
   }
 }
 
-export type { TreeNode, FileNode, DirectoryNode, TreeOptions };
+export type { DirectoryNode, FileNode, TreeNode, TreeOptions };

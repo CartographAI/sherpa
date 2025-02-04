@@ -1,9 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { CreateMessageRequestSchema, ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 
-import { BaseClient } from "./baseClient";
-import { createServer } from "./mcpFilesystem";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { BaseClient } from "./baseClient.js";
+import { createServer } from "./mcpFilesystem.js";
 
 export class FilesystemClient extends BaseClient {
   allowedDirectory: string;
