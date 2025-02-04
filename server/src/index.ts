@@ -33,6 +33,9 @@ async function main() {
 
   const host = await createHost({ allowedDirectory });
   serveApi(host);
+
+  const open = await import("open");
+  open.default("http://localhost:3031");
 }
 
 main();
