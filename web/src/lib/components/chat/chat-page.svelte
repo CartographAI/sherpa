@@ -6,13 +6,11 @@
   import MessageInput from "$lib/components/chat/message-input.svelte";
   import ScratchPad from "$lib/components/chat/scratch-pad.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { getProviderForModelId } from "$lib/config";
+  import { API_BASE_URL, getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
+  import { CircleAlert, History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
   import { onMount, untrack } from "svelte";
   import { toast } from "svelte-sonner";
-
-  const API_BASE_URL = "http://localhost:3031";
 
   let isLoading: boolean = $state(false);
   let isHistoryPanelOpen = $state(false);
@@ -23,6 +21,11 @@
   const chat = createChatState();
   const chatHistory = createChatHistoryState();
   const config = createConfigState();
+
+  let eventSource: EventSource | null;
+  let connectionState: "connecting" | "connected" | "disconnected" = $state("connecting");
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 3;
 
   $effect(() => {
     if (chatId) {
@@ -38,50 +41,85 @@
     if (!config.hasApiKeyConfigured) openPanel = "config";
   });
 
-  onMount(() => {
-    console.log("creating event source");
-    const eventSource = new EventSource(API_BASE_URL + "/api/events");
-
-    // Handle "message" events - this expects event.data to have type of CoreMessage.
-    // It can be a user message, assistant message or tool message.
-    eventSource.onmessage = (event) => {
-      console.log("received sse message:", event);
-      const eventData = JSON.parse(event.data) as CoreMessage;
-      if (eventData.role === "assistant" && chat.lastMessage?.role === "assistant") {
-        // Replace last assistant message (received through streaming) with this full message
-        chat.lastMessage.content = eventData.content;
-      } else {
-        chat.messages.push(eventData);
-      }
-      chatHistory.updateChat(chat);
+  function setupEventListeners(es: EventSource) {
+    es.onopen = () => {
+      connectionState = "connected";
+      reconnectAttempts = 0;
     };
 
-    // Handle "stream" events for streaming responses from the model. This expects event.data to be a string.
-    // This is only used for assistant messages.
-    eventSource.addEventListener("stream", (event) => {
-      console.log("received sse stream event:", event);
-      const textChunk = event.data;
-      if (chat.lastMessage?.role === "assistant") {
-        chat.messages[chat.messages.length - 1].content += textChunk;
-      } else {
-        chat.messages.push({ role: "assistant", content: textChunk });
+    es.onmessage = (event) => {
+      try {
+        console.log("received sse message:", event);
+        const eventData = JSON.parse(event.data) as CoreMessage;
+        if (eventData.role === "assistant" && chat.lastMessage?.role === "assistant") {
+          // Replace last assistant message (received through streaming) with this full message
+          chat.lastMessage.content = eventData.content;
+        } else {
+          chat.messages.push(eventData);
+        }
+        chatHistory.updateChat(chat);
+      } catch (error) {
+        console.error("Error processing message:", error);
+        toast.error("Error processing message from server", { position: "top-center" });
+      }
+    };
+
+    es.addEventListener("stream", (event) => {
+      try {
+        console.log("received sse stream event:", event);
+        const textChunk = event.data;
+        if (chat.lastMessage?.role === "assistant") {
+          chat.messages[chat.messages.length - 1].content += textChunk;
+        } else {
+          chat.messages.push({ role: "assistant", content: textChunk });
+        }
+      } catch (error) {
+        console.error("Error processing stream:", error);
+        toast.error("Error processing stream from server", { position: "top-center" });
       }
     });
 
-    eventSource.onerror = (error) => {
+    es.onerror = (error) => {
       console.error("EventSource error:", error);
-      // if (eventSource.readyState === EventSource.CLOSED) {
-      //   console.log("Reconnecting in 1 second");
-      //   setTimeout(() => {
-      //     connectToEventSource();
-      //   }, 1000); // Wait 1 second before reconnecting
-      // }
+      connectionState = "disconnected";
+
+      if (es.readyState === EventSource.CLOSED) {
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++;
+          toast.error(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`, {
+            position: "top-center",
+          });
+
+          setTimeout(() => {
+            if (eventSource) eventSource.close();
+            eventSource = new EventSource(API_BASE_URL + "/api/events");
+            setupEventListeners(eventSource);
+          }, 1000 * reconnectAttempts); // Exponential backoff
+        } else {
+          toast.error("Failed to maintain connection. Please refresh the page.", {
+            position: "top-center",
+          });
+        }
+      }
     };
-    eventSource.addEventListener("close", () => {
-      console.log("closing event source");
-      eventSource.close();
+
+    es.addEventListener("close", () => {
+      es.close();
+      connectionState = "disconnected";
     });
-    // TODO Cleanup event listeners
+  }
+
+  onMount(() => {
+    connectionState = "connecting";
+    eventSource = new EventSource(API_BASE_URL + "/api/events");
+    setupEventListeners(eventSource);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    };
   });
 
   function togglePanel(panel: "config" | "scratch", open?: boolean) {
@@ -174,6 +212,9 @@
 
     {#if isLoading}
       <div class="flex gap-2"><Loader class="animate-spin" /><span>Generating response</span></div>
+    {/if}
+    {#if connectionState === "disconnected"}
+      <div class="flex gap-2"><CircleAlert /><span>Not connected to server</span></div>
     {/if}
 
     <MessageInput handleSubmit={sendMessage} />
