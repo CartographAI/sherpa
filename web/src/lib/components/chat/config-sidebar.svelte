@@ -35,7 +35,7 @@
               >
             </p>
             <Input
-              type="text"
+              type="password"
               id="anthropic"
               placeholder="sk-ant-xxxxxxx"
               value={config.apiKeys.anthropic}
@@ -57,7 +57,7 @@
               >
             </p>
             <Input
-              type="text"
+              type="password"
               id="gemini"
               placeholder="AIzaxxxxxxx"
               value={config.apiKeys.gemini}
