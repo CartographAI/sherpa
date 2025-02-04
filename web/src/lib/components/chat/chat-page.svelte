@@ -129,7 +129,22 @@
 
   async function sendMessage() {
     const modelProvider = getProviderForModelId(chat.selectedModel)!;
-    const apiKey = modelProvider === "Anthropic" ? config.apiKeys.anthropic : config.apiKeys.gemini;
+    let apiKey;
+
+    switch (modelProvider) {
+      case "Anthropic":
+        apiKey = config.apiKeys.anthropic;
+        break;
+      case "Gemini":
+        apiKey = config.apiKeys.gemini;
+        break;
+      case "OpenAI":
+        apiKey = config.apiKeys.openai;
+        break;
+      default:
+        // Handle the case where modelProvider is neither "Anthropic" nor "Gemini"
+        throw new Error(`Unsupported model provider: ${modelProvider}`);
+    }
     if (!apiKey) {
       toast.error(`Please configure your ${modelProvider} API key to use this model`, { position: "top-center" });
       return;

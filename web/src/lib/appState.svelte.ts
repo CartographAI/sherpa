@@ -4,7 +4,9 @@ import { defaultModel } from "./config";
 
 interface ApiKeys {
   anthropic?: string;
+  deepseek?: string;
   gemini?: string;
+  openai?: string;
 }
 
 interface StoredChat {
@@ -128,9 +130,11 @@ export function useChatHistory(): ChatHistoryState {
 
 class ConfigState {
   apiKeys: ApiKeys = $state(JSON.parse(localStorage.getItem("apiKeys") || "{}"));
-  hasApiKeyConfigured = $derived(this.apiKeys.anthropic || this.apiKeys.gemini);
+  hasApiKeyConfigured = $derived(
+    this.apiKeys.anthropic || this.apiKeys.deepseek || this.apiKeys.gemini || this.apiKeys.openai,
+  );
 
-  setApiKey(provider: "anthropic" | "gemini", key: string) {
+  setApiKey(provider: "anthropic" | "deepseek" | "gemini" | "openai", key: string) {
     this.apiKeys[provider] = key;
     localStorage.setItem("apiKeys", JSON.stringify(this.apiKeys));
   }

@@ -17,6 +17,13 @@ export const modelConfig = [
       { name: "Gemini 2.0 Flash Experimental", id: "gemini-2.0-flash-exp" },
     ],
   },
+  {
+    provider: "OpenAI",
+    models: [
+      { name: "o3-mini", id: "o3-mini-2025-01-31" },
+      { name: "gpt-4o", id: "gpt-4o-2024-11-20" },
+    ],
+  },
 ];
 
 export const defaultModel = "claude-3-5-sonnet-20241022";

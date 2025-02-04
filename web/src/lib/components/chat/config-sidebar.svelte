@@ -69,6 +69,28 @@
               }}
             />
           </div>
+
+          <!-- OpenAI API Key -->
+          <div class="flex w-full flex-col gap-1.5">
+            <Label for="openai">OpenAI</Label>
+            <p class="text-muted-foreground text-sm">
+              Create an API key at <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank" class="underline"
+                >https://platform.openai.com/settings/organization/api-keys</a
+              >
+            </p>
+            <Input
+              type="password"
+              id="openai"
+              placeholder="sk-xxxxxxxxx"
+              value={config.apiKeys.openai}
+              onblur={(event) => {
+                if (event.currentTarget.value !== config.apiKeys.openai) {
+                  toast.success("Saved", { position: "top-right" });
+                  config.setApiKey("openai", event.currentTarget.value);
+                }
+              }}
+            />
+          </div>
         </form>
       </Sidebar.Group>
     </Sidebar.Content>

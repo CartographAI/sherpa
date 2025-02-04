@@ -1,5 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import {
   jsonSchema,
   streamText,
@@ -25,13 +27,34 @@ export class Host {
   toolsForModel: Record<string, CoreTool> = {};
   toolsToClientMap: Record<string, BaseClient> = {};
 
-  setModel({ model, apiKey, modelProvider }: { model: string; apiKey: string; modelProvider: "Anthropic" | "Gemini" }) {
-    if (modelProvider === "Anthropic") {
-      const anthropic = createAnthropic({ apiKey });
-      this.model = anthropic(model);
-    } else if (modelProvider === "Gemini") {
-      const google = createGoogleGenerativeAI({ apiKey });
-      this.model = google(model);
+  setModel({
+    model,
+    apiKey,
+    modelProvider,
+  }: { model: string; apiKey: string; modelProvider: "Anthropic" | "Deepseek" | "Gemini" | "OpenAI" }) {
+    switch (modelProvider) {
+      case "Anthropic":
+        const anthropic = createAnthropic({ apiKey });
+        this.model = anthropic(model);
+        break;
+
+      case "Deepseek":
+        const deepseek = createDeepSeek({ apiKey });
+        this.model = deepseek(model);
+        break;
+
+      case "Gemini":
+        const google = createGoogleGenerativeAI({ apiKey });
+        this.model = google(model);
+        break;
+
+      case "OpenAI":
+        const openai = createOpenAI({ apiKey });
+        this.model = openai(model);
+        break;
+
+      default:
+        throw new Error(`Unsupported model provider: ${modelProvider}`);
     }
   }
 
