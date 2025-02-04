@@ -6,6 +6,7 @@
   import MessageInput from "$lib/components/chat/message-input.svelte";
   import ScratchPad from "$lib/components/chat/scratch-pad.svelte";
   import { Button } from "$lib/components/ui/button";
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { API_BASE_URL, getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
   import { CircleAlert, History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
@@ -213,6 +214,7 @@
 </script>
 
 <div class="flex gap-2">
+  <!-- Left buttons and sidebar -->
   <div>
     <div class="fixed top-0 left-0 p-3 z-20">
       <Button variant="secondary" onclick={() => (isHistoryPanelOpen = !isHistoryPanelOpen)}>
@@ -221,6 +223,8 @@
     </div>
     <ChatHistorySidebar bind:open={isHistoryPanelOpen} />
   </div>
+
+  <!-- Main chat interface -->
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
     {#if chat.messages.length > 0}
       <div class="space-y-2">
@@ -239,6 +243,8 @@
 
     <MessageInput handleSubmit={sendMessage} />
   </div>
+
+  <!-- Right buttons and sidebar -->
   <div class="flex flex-col h-svh">
     <div class="w-[250px]">
       <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
@@ -256,7 +262,15 @@
         </Button>
       </div>
     </div>
-    <ConfigSidebar bind:open={() => openPanel === "config", (value) => togglePanel("config", value)} />
-    <ScratchPad bind:open={() => openPanel === "scratch", (value) => togglePanel("scratch", value)} />
+
+    <Sidebar.Provider style="--sidebar-width: 500px" class="flex-1" open={openPanel != null}>
+      <Sidebar.Root side="right" variant="floating" class="p-2 pt-16">
+        {#if openPanel === "config"}
+          <ConfigSidebar bind:open={() => openPanel === "config", (value) => togglePanel("config", value)} />
+        {:else if openPanel === "scratch"}
+          <ScratchPad bind:open={() => openPanel === "scratch", (value) => togglePanel("scratch", value)} />
+        {/if}
+      </Sidebar.Root>
+    </Sidebar.Provider>
   </div>
 </div>
