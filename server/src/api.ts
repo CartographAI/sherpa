@@ -22,16 +22,15 @@ app.get("/api/health", (c) => c.json({ ok: true }));
 
 // Store connected clients
 const clients: Record<string, { stream: SSEStreamingApi }> = {};
-const clientId = "1"; // Assume we only ever have 1 client for now
 
-async function sendMessageToClient(data: CoreMessage) {
+async function sendMessageToClient(clientId: string, data: CoreMessage) {
   await clients[clientId].stream.writeSSE({
     data: JSON.stringify(data),
     event: "message",
   });
 }
 
-async function sendTextStreamToClient(stream: AsyncIterable<string>) {
+async function sendTextStreamToClient(clientId: string, stream: AsyncIterable<string>) {
   for await (const textPart of stream) {
     await clients[clientId].stream.writeSSE({
       data: textPart,
@@ -44,9 +43,14 @@ function uuid() {
   return crypto.randomUUID();
 }
 
-app.get("/api/events", (c) => {
+app.get("/api/events/:chatId", (c) => {
+  const chatId = c.req.param("chatId");
+  if (!chatId) return c.json({ error: "chatId is required" }, 400);
+  if (clients[chatId]) return c.json({ error: "Another chat with this chatId is already connected" }, 400);
+
   return streamSSE(c, async (stream) => {
-    clients[clientId] = { stream };
+    console.log(`client ${chatId} connected`);
+    clients[chatId] = { stream };
 
     await stream.writeSSE({
       data: "Connected to stream",
@@ -55,8 +59,8 @@ app.get("/api/events", (c) => {
     });
 
     c.req.raw.signal.addEventListener("abort", () => {
-      console.log("client disconnected", clientId);
-      delete clients[clientId];
+      console.log(`client ${chatId} disconnected`);
+      delete clients[chatId];
     });
 
     // Keep the connection open
@@ -114,7 +118,9 @@ app.get("/api/tree", async (c) => {
   }
 });
 
-app.post("/api/chat", async (c) => {
+app.post("/api/chat/:chatId", async (c) => {
+  const chatId = c.req.param("chatId");
+  if (!chatId) return c.json({ error: "Chat ID is required" }, 400);
   const { userPrompt, previousMessages, model, modelProvider, apiKey, userFiles } = await c.req.json();
   host.setModel({ model, modelProvider, apiKey });
 
@@ -123,8 +129,8 @@ app.post("/api/chat", async (c) => {
       systemPrompt: SYSTEM_PROMPT,
       userPrompt,
       previousMessages,
-      onMessage: sendMessageToClient,
-      onTextStream: sendTextStreamToClient,
+      onMessage: (message: CoreMessage) => sendMessageToClient(chatId, message),
+      onTextStream: (stream: AsyncIterable<string>) => sendTextStreamToClient(chatId, stream),
       userFiles: userFiles,
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted

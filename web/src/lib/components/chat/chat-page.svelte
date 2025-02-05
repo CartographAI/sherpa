@@ -94,7 +94,7 @@
 
           setTimeout(() => {
             if (eventSource) eventSource.close();
-            eventSource = new EventSource(API_BASE_URL + "/api/events");
+            eventSource = new EventSource(`${API_BASE_URL}/api/events/${chat.id}`);
             setupEventListeners(eventSource);
           }, 1000 * reconnectAttempts); // Exponential backoff
         } else {
@@ -119,11 +119,13 @@
   }
 
   onMount(() => {
-    connectionState = "connecting";
-    eventSource = new EventSource(API_BASE_URL + "/api/events");
-    setupEventListeners(eventSource);
-
     getWorkingDirectory();
+  });
+
+  $effect(() => {
+    connectionState = "connecting";
+    eventSource = new EventSource(`${API_BASE_URL}/api/events/${chat.id}`);
+    setupEventListeners(eventSource);
 
     return () => {
       if (eventSource) {
@@ -201,7 +203,7 @@
     const inputMessageCopy = chat.inputMessage;
     chat.inputMessage = "";
     try {
-      const response = await fetch(API_BASE_URL + "/api/chat", {
+      const response = await fetch(`${API_BASE_URL}/api/chat/${chat.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
