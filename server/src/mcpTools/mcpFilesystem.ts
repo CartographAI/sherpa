@@ -158,19 +158,35 @@ export async function createServer(allowedDirectory: string) {
           if (!parsed.success) {
             throw new Error(`Invalid arguments for read_files: ${parsed.error}`);
           }
+          let documentIndex = 0;
+
+          // Helper function that creates XML
+          function formatAsXml(path: string, content: string): string {
+            const xmlLines = [
+              `<document index="${documentIndex}">`,
+              `<source>${path}</source>`,
+              `<document_content>`,
+              content,
+              `</document_content>`,
+              `</document>`,
+            ];
+            documentIndex++;
+            return xmlLines.join("\n");
+          }
+
           const results = await Promise.all(
             parsed.data.paths.map(async (filePath: string) => {
               try {
                 const validPath = await validatePath(filePath, normalizedAllowedDirectory);
                 const content = await fs.readFile(validPath, "utf-8");
-                let processedContent = content
+                const processedContent = content
                   .split("\n")
                   .map((line, i) => `L${i + 1}: ${line}`)
                   .join("\n");
-                return `<${filePath}>\n${processedContent}\n</${filePath}>`;
+                return formatAsXml(filePath, processedContent);
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                return `${filePath}: Error - ${errorMessage}`;
+                return formatAsXml(filePath, `Error - ${errorMessage}`);
               }
             }),
           );
