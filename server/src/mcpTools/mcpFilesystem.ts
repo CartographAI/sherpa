@@ -117,8 +117,7 @@ export async function createServer(allowedDirectory: string) {
             "Use this to analyze file contents. " +
             "Each file's content is returned with its path as a reference. " +
             "Failed reads for individual files won't stop " +
-            "the entire operation. Only works within allowed directories. " +
-            "Specify the path as absolute paths, do not assume the directory that you are being run from.",
+            "the entire operation.",
           inputSchema: zodToJsonSchema(ReadFilesArgsSchema) as ToolInput,
         },
         {
@@ -127,9 +126,7 @@ export async function createServer(allowedDirectory: string) {
             "Generate a tree-style visualization of a directory structure. " +
             "Shows the hierarchy of files and directories in a readable format. " +
             "Use this to understand what files are available. " +
-            "Optionally specify maxDepth to limit the depth of the tree. " +
-            "Only works within allowed directories. " +
-            "Specify the path as absolute paths, do not assume the directory that you are being run from.",
+            "Optionally specify maxDepth to limit the depth of the tree. ",
           inputSchema: zodToJsonSchema(TreeArgsSchema) as ToolInput,
         },
         {
@@ -161,10 +158,10 @@ export async function createServer(allowedDirectory: string) {
           let documentIndex = 0;
 
           // Helper function that creates XML
-          function formatAsXml(path: string, content: string): string {
+          function formatAsXml(relativePath: string, content: string): string {
             const xmlLines = [
               `<document index="${documentIndex}">`,
-              `<source>${path}</source>`,
+              `<source>${relativePath}</source>`,
               `<document_content>`,
               content,
               `</document_content>`,
@@ -177,13 +174,15 @@ export async function createServer(allowedDirectory: string) {
           const results = await Promise.all(
             parsed.data.paths.map(async (filePath: string) => {
               try {
-                const validPath = await validatePath(filePath, normalizedAllowedDirectory);
+                const absolutePath = path.resolve(normalizedAllowedDirectory, filePath);
+                const validPath = await validatePath(absolutePath, normalizedAllowedDirectory);
+                const relativePath = path.relative(normalizedAllowedDirectory, validPath);
                 const content = await fs.readFile(validPath, "utf-8");
                 const processedContent = content
                   .split("\n")
                   .map((line, i) => `L${i + 1}: ${line}`)
                   .join("\n");
-                return formatAsXml(filePath, processedContent);
+                return formatAsXml(relativePath, processedContent);
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 return formatAsXml(filePath, `Error - ${errorMessage}`);
@@ -199,7 +198,9 @@ export async function createServer(allowedDirectory: string) {
           if (!parsed.success) {
             throw new Error(`Invalid arguments for tree: ${parsed.error}`);
           }
-          const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectory);
+          const filePath = parsed.data.path;
+          const absolutePath = path.resolve(normalizedAllowedDirectory, filePath);
+          const validPath = await validatePath(absolutePath, normalizedAllowedDirectory);
           const tree = new TreeGenerator({
             maxDepth: parsed.data.maxDepth ?? undefined,
           });
