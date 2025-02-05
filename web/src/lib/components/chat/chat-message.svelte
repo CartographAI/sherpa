@@ -9,7 +9,7 @@
   let { message }: { message: CoreMessage } = $props();
 </script>
 
-<div class="p-4 rounded-lg flex {message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}">
+<div class="p-4 rounded-lg flex {message.role === 'user' ? 'bg-stone-300' : 'bg-muted/50'}">
   {#if message.role === "user"}
     <Avatar class="w-6 h-6 mr-2"><UserRound /></Avatar>
   {/if}
