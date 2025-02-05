@@ -22,7 +22,7 @@ function expandHome(filepath: string): string {
 }
 
 // Security utilities
-async function validatePath(requestedPath: string, normalizedAllowedDirectory: string): Promise<string> {
+export async function validatePath(requestedPath: string, normalizedAllowedDirectory: string): Promise<string> {
   const expandedPath = expandHome(requestedPath);
   const absolute = path.isAbsolute(expandedPath)
     ? path.resolve(expandedPath)

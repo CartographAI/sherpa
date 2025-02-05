@@ -41,8 +41,8 @@ export class TreeGenerator {
     return this.output.join("\n");
   }
 
-  public generateTree(targetPath: string): TreeNode {
-    return this.buildDirectoryTree(targetPath);
+  public generateTree(targetPath: string, baseDir: string): TreeNode {
+    return this.buildDirectoryTree(targetPath, baseDir);
   }
 
   private processDirectory(dirPath: string, prefix = "", level = 0): void {
@@ -73,15 +73,16 @@ export class TreeGenerator {
     }
   }
 
-  private buildDirectoryTree(dirPath: string): TreeNode {
+  private buildDirectoryTree(dirPath: string, baseDir: string = dirPath): TreeNode {
     const stats = fs.statSync(dirPath);
     const baseName = path.basename(dirPath);
+    const relativePath = path.relative(baseDir, dirPath);
 
     if (!stats.isDirectory()) {
       return {
         name: baseName,
         type: "file",
-        path: dirPath,
+        path: relativePath || ".", // Use "." for the root file
       };
     }
 
@@ -92,12 +93,12 @@ export class TreeGenerator {
     for (const entry of filteredEntries) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        children.push(this.buildDirectoryTree(fullPath));
+        children.push(this.buildDirectoryTree(fullPath, baseDir));
       } else if (entry.isFile()) {
         children.push({
           name: entry.name,
           type: "file",
-          path: fullPath,
+          path: path.relative(baseDir, fullPath),
         });
       }
     }
@@ -105,11 +106,10 @@ export class TreeGenerator {
     return {
       name: baseName,
       type: "directory",
-      path: dirPath,
+      path: relativePath || ".", // Use "." for the root directory
       children,
     };
   }
-
   private readonly EXCLUDED_DIRECTORIES = new Set([".git"]);
 
   private filterIgnoredEntries(dirPath: string, entries: fs.Dirent[]): fs.Dirent[] {

@@ -13,6 +13,7 @@ import { Host } from "./host.js";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { log } from "./utils/logger.js";
+import { validatePath } from "./mcpTools/mcpFilesystem.js";
 
 let host: Host;
 const app = new Hono();
@@ -96,23 +97,27 @@ app.get("/api/directory", async (c) => {
 
 app.get("/api/tree", async (c) => {
   try {
-    const client = host.toolsToClientMap["tree"];
+    const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
       return c.json({ error: "Tool not available" }, 500);
     }
 
-    const { path, maxDepth } = c.req.query();
+    const { path: targetPath, maxDepth } = c.req.query();
 
-    if (!path) {
+    if (!targetPath) {
       return c.json({ error: "Path parameter is required" }, 400);
     }
+    const result = await client.callTool("list_allowed_directories", {});
+    const allowedDirectory = (result.content[0].text as string).replace("Allowed directory:\n", "");
 
     // Create a new TreeGenerator instance with the maxDepth option if provided
     const treeGenerator = new TreeGenerator({
       maxDepth: maxDepth ? parseInt(maxDepth) : undefined,
     });
+    const absolutePath = path.resolve(allowedDirectory, targetPath);
+    const validPath = await validatePath(absolutePath, allowedDirectory);
 
-    const treeStructure: TreeNode = treeGenerator.generateTree(path);
+    const treeStructure: TreeNode = treeGenerator.generateTree(validPath, allowedDirectory);
 
     return c.json({ tree: treeStructure });
   } catch (error) {
