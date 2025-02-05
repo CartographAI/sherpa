@@ -185,7 +185,7 @@ export async function createServer(allowedDirectory: string) {
           }
           const validPath = await validatePath(parsed.data.path, normalizedAllowedDirectory);
           const tree = new TreeGenerator({
-            maxDepth: parsed.data.maxDepth,
+            maxDepth: parsed.data.maxDepth ?? undefined,
           });
           const treeOutput = tree.generate(validPath);
           return {
