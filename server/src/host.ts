@@ -165,12 +165,6 @@ export class Host {
         currentMessages.push(userFilesToolCall);
         onMessage(userFilesToolCall);
       } else {
-        const allowedDirectoryToolCallPart = {
-          type: "tool-call" as const,
-          toolCallId: "0_list_allowed_directory",
-          toolName: "list_allowed_directories",
-        } as ToolCallPart;
-        const allowedDirectoryToolCallResponse = await processToolCalls([allowedDirectoryToolCallPart], false);
         const initialTreeToolCall = {
           role: "assistant" as const,
           content: [
@@ -179,10 +173,7 @@ export class Host {
               toolCallId: "0_tree",
               toolName: "tree",
               args: {
-                path: (allowedDirectoryToolCallResponse?.content[0].result as string).replace(
-                  "Allowed directory:\n",
-                  "",
-                ),
+                path: ".",
                 maxDepth: 3,
               },
             },
