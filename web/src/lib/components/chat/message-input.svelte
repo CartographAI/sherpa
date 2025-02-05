@@ -5,6 +5,7 @@
   import * as Select from "$lib/components/ui/select/index.js";
   import { Switch } from "$lib/components/ui/switch";
   import { Textarea } from "$lib/components/ui/textarea";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { getNameForModelId, modelConfig } from "$lib/config";
 
   let { handleSubmit }: { handleSubmit: () => void } = $props();
@@ -41,7 +42,7 @@
     />
     <Button type="submit" disabled={chat.isLoading || chat.inputMessage.trim() === ""}>Send</Button>
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-4">
     <Select.Root type="single" bind:value={chat.selectedModel}>
       <Select.Trigger class="w-[240px]">{modelSelectContent}</Select.Trigger>
       <Select.Content>
@@ -58,7 +59,18 @@
         {/each}
       </Select.Content>
     </Select.Root>
-    <Label for="readFiles">Read all files</Label>
-    <Switch bind:checked={chat.sendFiles} id="readFiles" />
+    <Tooltip.Provider>
+      <Tooltip.Root delayDuration={100}>
+        <Tooltip.Trigger>
+          <div class="flex items-center gap-2">
+            <Label for="readFiles">Read all files</Label>
+            <Switch bind:checked={chat.sendFiles} id="readFiles" />
+          </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          <p>Enabling this will send all file contents to the model along with your first message</p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   </div>
 </form>
