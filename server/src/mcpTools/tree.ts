@@ -36,7 +36,7 @@ export class TreeGenerator {
 
   public generate(targetPath: string): string {
     this.output = [];
-    this.output.push(targetPath);
+    this.output.push(path.basename(targetPath));
     this.processDirectory(targetPath);
     return this.output.join("\n");
   }

@@ -57,7 +57,7 @@ describe("TreeGenerator", () => {
     const result = treeGenerator.generate("/test-dir");
     expect(result).toBe(
       // biome-ignore format: the tree should not be formatted
-      "/test-dir\n" +
+      "test-dir\n" +
         "├── .gitignore\n" +
         "├── file1.txt\n" +
         "└── nested-dir\n" +
@@ -67,7 +67,13 @@ describe("TreeGenerator", () => {
 
   test("should respect parent .gitignore", () => {
     const result = treeGenerator.generate("/test-dir/nested-dir");
-    expect(result).toBe("/test-dir/nested-dir\n" + "└── file2.txt");
+    expect(result).toBe("nested-dir\n" + "└── file2.txt");
+  });
+
+  test("should show relative paths", () => {
+    const result = treeGenerator.generate("/test-dir/nested-dir");
+    expect(result).toContain("nested-dir");
+    expect(result).not.toContain("test-dir");
   });
 
   test("should respect .gitignore rules", () => {
