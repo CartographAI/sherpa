@@ -116,7 +116,8 @@ export async function createServer(allowedDirectory: string) {
             "Use this to analyze file contents. " +
             "Each file's content is returned with its path as a reference. " +
             "Failed reads for individual files won't stop " +
-            "the entire operation. Only works within allowed directories.",
+            "the entire operation. Only works within allowed directories. " +
+            "Specify the path as absolute paths, do not assume the directory that you are being run from.",
           inputSchema: zodToJsonSchema(ReadFilesArgsSchema) as ToolInput,
         },
         {
@@ -126,7 +127,8 @@ export async function createServer(allowedDirectory: string) {
             "Shows the hierarchy of files and directories in a readable format. " +
             "Use this to understand what files are available. " +
             "Optionally specify maxDepth to limit the depth of the tree. " +
-            "Only works within allowed directories.",
+            "Only works within allowed directories. " +
+            "Specify the path as absolute paths, do not assume the directory that you are being run from.",
           inputSchema: zodToJsonSchema(TreeArgsSchema) as ToolInput,
         },
         {
