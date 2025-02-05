@@ -247,8 +247,8 @@
     {:else}
       <div class="text-sm font-medium pt-2">Working directory: {chat.workingDirectory}</div>
       <div class="space-y-2">
-        {#each chat.messages as message}
-          <ChatMessage {message} />
+        {#each chat.messages as message, index}
+          <ChatMessage {message} nextMessage={index < chat.messages.length - 1 ? chat.messages[index + 1] : null} />
         {/each}
       </div>
     {/if}
