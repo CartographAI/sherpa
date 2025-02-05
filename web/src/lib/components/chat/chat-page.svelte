@@ -51,7 +51,6 @@
 
     es.onmessage = (event) => {
       try {
-        console.log("received sse message:", event);
         const eventData = JSON.parse(event.data) as CoreMessage;
         if (eventData.role === "assistant" && chat.lastMessage?.role === "assistant") {
           // Replace last assistant message (received through streaming) with this full message
@@ -68,7 +67,6 @@
 
     es.addEventListener("stream", (event) => {
       try {
-        console.log("received sse stream event:", event);
         const textChunk = event.data;
         if (chat.lastMessage?.role === "assistant") {
           chat.messages[chat.messages.length - 1].content += textChunk;

@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import * as fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { log } from "./logger.js";
 
 const execAsync = promisify(exec);
 
@@ -17,12 +18,12 @@ export async function cloneRepository(gitUrl: string, cacheDirectory: string): P
   const repoDirectory = path.join(cacheDirectory, repoName);
 
   if (fs.existsSync(repoDirectory)) {
-    console.log(`Repository already exists at ${repoDirectory}, using existing clone.`);
+    log.info(`Repository already exists at ${repoDirectory}, using existing clone.`);
     return repoDirectory;
   }
 
   try {
-    console.log(`Cloning ${gitUrl} to ${repoDirectory}`);
+    log.info(`Cloning ${gitUrl} to ${repoDirectory}`);
     await execAsync(`git clone ${gitUrl} ${repoDirectory}`);
     return repoDirectory;
   } catch (error: any) {

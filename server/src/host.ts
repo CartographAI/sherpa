@@ -14,6 +14,7 @@ import {
 } from "ai";
 import type { BaseClient } from "./mcpTools/baseClient.js";
 import { createFilesystemClient } from "./mcpTools/filesystemClient.js";
+import { log } from "./utils/logger.js";
 
 export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
   const host = new Host();
@@ -95,8 +96,8 @@ export class Host {
     if (this.clients.length === 0) {
       throw new Error("No clients connected.");
     }
-    console.log("userPrompt :>>", userPrompt);
-    console.log("systemPrompt :>>", systemPrompt);
+    log.debug("userPrompt :>>", userPrompt);
+    log.debug("systemPrompt :>>", systemPrompt);
 
     let currentMessages = [...previousMessages];
     if (systemPrompt && currentMessages.length === 0)
@@ -118,7 +119,7 @@ export class Host {
             throw new Error(`Tool ${toolName} not found`);
           }
 
-          console.log(`[Calling tool ${toolName} with args ${JSON.stringify(args)}]`);
+          log.debug(`[Calling tool ${toolName} with args ${JSON.stringify(args)}]`);
           const toolResult = await client.callTool(toolName, args);
 
           return {
@@ -135,7 +136,7 @@ export class Host {
         content: toolResults,
       };
 
-      console.log("toolMessage :>>", toolMessage);
+      log.debug("toolMessage :>>", toolMessage);
       if (addToMessages) {
         currentMessages.push(toolMessage);
         onMessage(toolMessage);
@@ -207,7 +208,7 @@ export class Host {
       }
 
       // Get LLM response
-      console.log("calling model");
+      log.debug("calling model");
       const result = streamText({
         model: this.model,
         maxTokens: 8000,
@@ -218,7 +219,7 @@ export class Host {
 
       onTextStream(result.textStream);
       const assistantMessages = (await result.response).messages;
-      console.log("assistantMessages :>>", assistantMessages);
+      log.debug("assistantMessages :>>", assistantMessages);
 
       // Add assistant messages to conversation
       currentMessages.push(...assistantMessages);
@@ -232,7 +233,7 @@ export class Host {
       await processToolCalls(llmToolCalls);
     }
 
-    console.log("all messages :>>", currentMessages);
+    log.debug("all messages :>>", currentMessages);
   }
 
   async cleanup(): Promise<void> {

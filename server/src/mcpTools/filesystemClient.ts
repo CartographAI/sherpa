@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { CreateMessageRequestSchema, ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 
+import { log } from "../utils/logger.js";
 import { BaseClient } from "./baseClient.js";
 import { createServer } from "./mcpFilesystem.js";
 
@@ -33,21 +34,21 @@ export class FilesystemClient extends BaseClient {
       },
     );
     await client.connect(clientTransport);
-    console.log(`${this.clientName} connected to MCP server`);
+    log.debug(`${this.clientName} connected to MCP server`);
     this.session = client;
     const response = await this.listTools();
     const tools = response.tools;
-    console.log(
+    log.debug(
       `${this.clientName} tools:`,
       tools.map((tool) => tool.name),
     );
 
     client.setNotificationHandler(ProgressNotificationSchema, (notification) => {
-      console.log(`${this.clientName} got MCP notif`, notification);
+      log.debug(`${this.clientName} got MCP notif`, notification);
     });
 
     client.setRequestHandler(CreateMessageRequestSchema, (request) => {
-      console.log(`${this.clientName} got MCP request`, request);
+      log.debug(`${this.clientName} got MCP request`, request);
       return { _meta: {} };
     });
   }

@@ -12,11 +12,14 @@ import { SSEStreamingApi, streamSSE } from "hono/streaming";
 import { Host } from "./host.js";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
+import { log } from "./utils/logger.js";
 
 let host: Host;
 const app = new Hono();
-app.use("*", logger());
 app.use(cors());
+if (process.env.NODE_ENV === "development") {
+  app.use("*", logger());
+}
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 
@@ -49,7 +52,7 @@ app.get("/api/events/:chatId", (c) => {
   if (clients[chatId]) return c.json({ error: "Another chat with this chatId is already connected" }, 400);
 
   return streamSSE(c, async (stream) => {
-    console.log(`client ${chatId} connected`);
+    log.debug(`client ${chatId} connected`);
     clients[chatId] = { stream };
 
     await stream.writeSSE({
@@ -59,7 +62,7 @@ app.get("/api/events/:chatId", (c) => {
     });
 
     c.req.raw.signal.addEventListener("abort", () => {
-      console.log(`client ${chatId} disconnected`);
+      log.debug(`client ${chatId} disconnected`);
       delete clients[chatId];
     });
 
@@ -86,7 +89,7 @@ app.get("/api/directory", async (c) => {
     const result = await client.callTool("list_allowed_directories", {});
     return c.json({ directory: (result.content[0].text as string).replace("Allowed directory:\n", "") });
   } catch (error) {
-    console.error("Error getting directories:", error);
+    log.error("Error getting directories:", error);
     return c.json({ error: "Failed to get directories" }, 500);
   }
 });
@@ -113,7 +116,7 @@ app.get("/api/tree", async (c) => {
 
     return c.json({ tree: treeStructure });
   } catch (error) {
-    console.error("Error getting tree structure:", error);
+    log.error("Error getting tree structure:", error);
     return c.json({ error: "Failed to get tree structure" }, 500);
   }
 });
@@ -135,7 +138,7 @@ app.post("/api/chat/:chatId", async (c) => {
     });
     return c.json({ status: "completed" }, 202); // Return 202 Accepted
   } catch (error) {
-    console.error("Error processing query:", error);
+    log.error("Error processing query:", error);
     return c.json({ status: "error", message: (error as any).message }, 400);
   }
 });
@@ -163,5 +166,5 @@ export function serveApi(setHost: Host) {
     fetch: app.fetch,
     port: 3031,
   });
-  console.log("Server is running. Open http://localhost:3031 in your browser to use the app.");
+  log.info("Server is running. Open http://localhost:3031 in your browser to use the app.");
 }

@@ -6,6 +6,7 @@ import * as path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+import { log } from "../utils/logger.js";
 import { TreeGenerator } from "./tree.js";
 
 // Normalize all paths consistently
@@ -82,11 +83,11 @@ export async function createServer(allowedDirectory: string) {
   try {
     const stats = await fs.stat(allowedDirectory);
     if (!stats.isDirectory()) {
-      console.error(`Error: ${allowedDirectory} is not a directory`);
+      log.error(`Error: ${allowedDirectory} is not a directory`);
       process.exit(1);
     }
   } catch (error) {
-    console.error(`Error accessing directory ${allowedDirectory}:`, error);
+    log.error(`Error accessing directory ${allowedDirectory}:`, error);
     process.exit(1);
   }
   // Store allowed directories in normalized form
@@ -214,8 +215,8 @@ export async function createServer(allowedDirectory: string) {
     }
   });
 
-  console.error("Secure MCP Filesystem Server running on local transport");
-  console.error("Allowed directory:", normalizedAllowedDirectory);
+  log.info("Secure MCP Filesystem Server running on local transport");
+  log.info("Allowed directory:", normalizedAllowedDirectory);
 
   return server;
 }
