@@ -87,7 +87,13 @@ class ChatHistoryState {
     });
   }
 
+  // Call this before modifying this.chats to get the latest chatHistory from localstorage
+  refreshChats() {
+    this.chats = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+  }
+
   addChat(chat: ChatState) {
+    this.refreshChats();
     const storedChat: StoredChat = {
       id: chat.id,
       snippet: getSnippet(chat.messages),
@@ -98,6 +104,7 @@ class ChatHistoryState {
   }
 
   updateChat(chat: ChatState) {
+    this.refreshChats();
     const existingIndex = this.chats.findIndex((c) => c.id === chat.id);
 
     if (existingIndex === -1) {
@@ -120,6 +127,7 @@ class ChatHistoryState {
   }
 
   deleteChat(id: string) {
+    this.refreshChats();
     this.chats = this.chats.filter((chat) => chat.id !== id);
   }
 }
