@@ -38,7 +38,8 @@
       name="message"
       bind:value={chat.inputMessage}
       onkeydown={handleKeyDown}
-      class="flex-grow mr-2"
+      class="flex-grow mr-2 max-h-[70vh]"
+      autoExpand
     />
     <Button type="submit" disabled={chat.isLoading || chat.inputMessage.trim() === ""}>Send</Button>
   </div>
