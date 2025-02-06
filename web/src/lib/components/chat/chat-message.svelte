@@ -49,11 +49,12 @@
             <Markdown text={item.text} />
           {:else if item.type === "tool-call"}
             {@const toolResult = getToolCallResult(item.toolCallId)}
-            <div>
-              <Badge class="mr-2">Tool</Badge><span>{item.toolName}</span>
-              <Json content={{ args: item.args }} />
-
-              {#if toolResult}
+            <div class="flex flex-col gap-y-2">
+              <div>
+                <Badge class="mr-2">{item.toolName}</Badge>
+                <Json content={item.args} expandUpTo={3} />
+              </div>
+              {#if toolResult && toolResult.result}
                 <Json content={{ result: toolResult.result }} />
               {/if}
             </div>

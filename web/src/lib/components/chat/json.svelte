@@ -4,15 +4,27 @@
   let {
     content,
     nestedLevel = 0,
+    expandUpTo = 0,
   }: {
     content: unknown;
     nestedLevel?: number;
+    expandUpTo?: number;
   } = $props();
 
-  let openStates = $state<Record<string, boolean>>({});
+  let objectOpenStates = $state<Record<string, boolean>>(
+    typeof content === "object" && content != null && Object.keys(content).length <= expandUpTo
+      ? Object.fromEntries(Object.keys(content).map((key) => [key, true]))
+      : {},
+  );
+
+  let arrayLengthTooLong = $derived(Array.isArray(content) && content.length > expandUpTo);
+  let arrayIsTruncated = $state(true);
+  let arrayItemsToDisplay = $derived(
+    Array.isArray(content) ? (arrayLengthTooLong && arrayIsTruncated ? content.slice(0, expandUpTo) : content) : [],
+  );
 
   function toggleOpenState(key: string) {
-    openStates[key] = !openStates[key];
+    objectOpenStates[key] = !objectOpenStates[key];
   }
 
   function marginClass(indentLevel: number): string {
@@ -39,16 +51,33 @@
       <pre class={marginClass(nestedLevel)}><code>{content}</code></pre>
     </span>
   {:else}
-    <code>{content}</code>
+    <span class="text-sm">{content}</span>
   {/if}
+{:else if Array.isArray(content)}
+  <ul class={marginClass(nestedLevel) + " text-sm"}>
+    {#each arrayItemsToDisplay as value}
+      <li>
+        - <Self content={value} nestedLevel={nestedLevel + 1} {expandUpTo} />
+      </li>
+    {/each}
+    {#if arrayLengthTooLong}
+      {#if arrayIsTruncated}
+        <button class="text-sm text-muted-foreground" onclick={() => (arrayIsTruncated = false)}>
+          {content.length - arrayItemsToDisplay.length} more items. click to show
+        </button>
+      {:else}
+        <button class="text-sm text-muted-foreground" onclick={() => (arrayIsTruncated = true)}> click to hide </button>
+      {/if}
+    {/if}
+  </ul>
 {:else if typeof content === "object"}
-  <ul class={marginClass(nestedLevel)}>
+  <ul class={marginClass(nestedLevel) + " text-sm"}>
     {#each Object.entries(content) as [key, value] (key)}
       <li>
-        {#if openStates[key]}
+        {#if objectOpenStates[key]}
           <button onclick={() => toggleOpenState(key)}>
             - {key}
-          </button>: <Self content={value} nestedLevel={nestedLevel + 1} />
+          </button>: <Self content={value} nestedLevel={nestedLevel + 1} {expandUpTo} />
         {:else}
           <button onclick={() => toggleOpenState(key)}>
             + {key}
