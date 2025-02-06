@@ -11,10 +11,8 @@ export const modelConfig = [
   {
     provider: "Gemini",
     models: [
-      { name: "Gemini 1.5 Flash 002", id: "gemini-1.5-flash-002" },
-      { name: "Gemini 1.5 Pro 002", id: "gemini-1.5-pro-002" },
-      { name: "Gemini 2.0 Flash Thinking Experimental 01-21", id: "gemini-2.0-flash-thinking-exp" },
-      { name: "Gemini 2.0 Flash Experimental", id: "gemini-2.0-flash-exp" },
+      { name: "Gemini 2.0 Flash", id: "gemini-2.0-flash" },
+      { name: "Gemini 2.0 Pro Experimental", id: "gemini-2.0-pro-exp-02-05" },
     ],
   },
   {
