@@ -4,18 +4,15 @@
   import ConfigSidebar from "$lib/components/chat/config-sidebar.svelte";
   import MainSidebar from "$lib/components/chat/main-sidebar.svelte";
   import MessageInput from "$lib/components/chat/message-input.svelte";
-  import ScratchPad from "$lib/components/chat/scratch-pad.svelte";
-  import { Button } from "$lib/components/ui/button";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { API_BASE_URL, getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { CircleAlert, Loader, Pencil, SlidersHorizontal } from "lucide-svelte";
+  import { CircleAlert, Loader } from "lucide-svelte";
   import { onMount, untrack } from "svelte";
   import { toast } from "svelte-sonner";
 
   let isLoading: boolean = $state(false);
-  let isHistoryPanelOpen = $state(false);
-  let openPanel: "config" | "scratch" | null = $state(null);
+  let openPanel: "config" | null = $state(null);
 
   const { chatId }: { chatId?: string } = $props();
 
@@ -36,7 +33,6 @@
     } else {
       chat.reset();
     }
-    isHistoryPanelOpen = false;
   });
 
   $effect(() => {
@@ -133,7 +129,7 @@
     };
   });
 
-  function togglePanel(panel: "config" | "scratch", open?: boolean) {
+  function togglePanel(panel: "config", open?: boolean) {
     if (openPanel === panel && !open) openPanel = null;
     else openPanel = panel;
   }
@@ -223,7 +219,7 @@
 </script>
 
 <div class="flex gap-2">
-  <MainSidebar />
+  <MainSidebar toggleConfig={() => togglePanel("config")} />
 
   <!-- Main chat interface -->
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
@@ -267,25 +263,12 @@
     {/if}
   </div>
 
-  <!-- Right buttons and sidebar -->
+  <!-- Right sidebar (config) -->
   <div class="flex flex-col h-svh">
-    <div class="w-[250px]">
-      <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
-        <Button variant="secondary" onclick={() => togglePanel("scratch")}>
-          <Pencil />Scratch
-        </Button>
-        <Button variant="secondary" onclick={() => togglePanel("config")}>
-          <SlidersHorizontal />Config
-        </Button>
-      </div>
-    </div>
-
     <Sidebar.Provider style="--sidebar-width: 500px" class="flex-1" open={openPanel != null}>
-      <Sidebar.Root side="right" variant="floating" class="p-2 pt-16">
+      <Sidebar.Root side="right" variant="floating">
         {#if openPanel === "config"}
           <ConfigSidebar bind:open={() => openPanel === "config", (value) => togglePanel("config", value)} />
-        {:else if openPanel === "scratch"}
-          <ScratchPad bind:open={() => openPanel === "scratch", (value) => togglePanel("scratch", value)} />
         {/if}
       </Sidebar.Root>
     </Sidebar.Provider>

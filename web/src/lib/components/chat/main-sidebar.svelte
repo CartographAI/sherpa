@@ -2,9 +2,9 @@
   import { useChatHistory } from "$lib/appState.svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import { History, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-svelte";
+  import { History, PanelLeftClose, PanelLeftOpen, Plus, Settings } from "lucide-svelte";
 
-  let { open = $bindable(false) }: { open?: boolean } = $props();
+  let { open = $bindable(false), toggleConfig }: { open?: boolean; toggleConfig: () => void } = $props();
   const chatHistory = useChatHistory();
 </script>
 
@@ -42,7 +42,7 @@
         <Sidebar.GroupContent>
           <Sidebar.Menu>
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton>
+              <Sidebar.MenuButton onclick={() => (open = true)}>
                 {#snippet tooltipContent()}Chat history{/snippet}
                 <History />
                 <span>Chat history</span>
@@ -58,12 +58,21 @@
                     </a>
                   </Sidebar.MenuSubItem>
                 {/each}
+                {#if chatHistory.chats.length === 0}
+                  <span>No chats yet</span>
+                {/if}
               </Sidebar.MenuSub>
             </Sidebar.MenuItem>
           </Sidebar.Menu>
         </Sidebar.GroupContent>
       </Sidebar.Group>
     </Sidebar.Content>
-    <Sidebar.Footer />
+    <Sidebar.Footer class="mt-2">
+      <Sidebar.MenuButton onclick={toggleConfig}>
+        {#snippet tooltipContent()}Configuration{/snippet}
+        <Settings />
+        <span>Configuration</span>
+      </Sidebar.MenuButton>
+    </Sidebar.Footer>
   </Sidebar.Root>
 </Sidebar.Provider>
