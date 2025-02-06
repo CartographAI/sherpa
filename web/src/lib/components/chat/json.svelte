@@ -14,6 +14,21 @@
   function toggleOpenState(key: string) {
     openStates[key] = !openStates[key];
   }
+
+  function marginClass(indentLevel: number): string {
+    switch (indentLevel) {
+      case 0:
+        return "ml-0";
+      case 1:
+        return "ml-2";
+      case 2:
+        return "ml-4";
+      case 3:
+        return "ml-6";
+      default:
+        return "ml-8";
+    }
+  }
 </script>
 
 {#if content == null}
@@ -21,13 +36,13 @@
 {:else if typeof content === "string"}
   {#if content.includes("\n")}
     <span class="prose">
-      <pre class="ml-{nestedLevel * 2}"><code>{content}</code></pre>
+      <pre class={marginClass(nestedLevel)}><code>{content}</code></pre>
     </span>
   {:else}
     <code>{content}</code>
   {/if}
 {:else if typeof content === "object"}
-  <ul class="ml-{nestedLevel * 2}">
+  <ul class={marginClass(nestedLevel)}>
     {#each Object.entries(content) as [key, value] (key)}
       <li>
         {#if openStates[key]}
