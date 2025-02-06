@@ -1,15 +1,15 @@
 <script lang="ts">
   import { createChatHistoryState, createChatState, createConfigState } from "$lib/appState.svelte";
-  import ChatHistorySidebar from "$lib/components/chat/chat-history-sidebar.svelte";
   import ChatMessage from "$lib/components/chat/chat-message.svelte";
   import ConfigSidebar from "$lib/components/chat/config-sidebar.svelte";
+  import MainSidebar from "$lib/components/chat/main-sidebar.svelte";
   import MessageInput from "$lib/components/chat/message-input.svelte";
   import ScratchPad from "$lib/components/chat/scratch-pad.svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { API_BASE_URL, getProviderForModelId } from "$lib/config";
   import { type CoreMessage } from "ai";
-  import { CircleAlert, History, Loader, Pencil, Plus, SlidersHorizontal } from "lucide-svelte";
+  import { CircleAlert, Loader, Pencil, SlidersHorizontal } from "lucide-svelte";
   import { onMount, untrack } from "svelte";
   import { toast } from "svelte-sonner";
 
@@ -223,20 +223,12 @@
 </script>
 
 <div class="flex gap-2">
-  <!-- Left buttons and sidebar -->
-  <div>
-    <div class="fixed top-0 left-0 p-3 z-20">
-      <Button variant="secondary" onclick={() => (isHistoryPanelOpen = !isHistoryPanelOpen)}>
-        <History />Chats
-      </Button>
-    </div>
-    <ChatHistorySidebar bind:open={isHistoryPanelOpen} />
-  </div>
+  <MainSidebar />
 
   <!-- Main chat interface -->
   <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
     {#if chat.messages.length === 0}
-      <div class="text-muted-foreground p-2">
+      <div class="text-muted-foreground p-2 pt-[10%]">
         Hi there! I'm Sherpa, your friendly codebase guide. 👋<br />
         I'm here to help you understand this codebase and assist with code-related questions.<br /><br />
         You can ask me to explain code, suggest improvements, or help with development tasks.<br />
@@ -279,14 +271,6 @@
   <div class="flex flex-col h-svh">
     <div class="w-[250px]">
       <div class="fixed top-0 right-0 flex flex-row justify-end gap-2 p-3 z-20">
-        <Button
-          href="/"
-          onclick={() => {
-            if (!chatId) chat.reset();
-          }}
-        >
-          <Plus />New chat
-        </Button>
         <Button variant="secondary" onclick={() => togglePanel("scratch")}>
           <Pencil />Scratch
         </Button>
