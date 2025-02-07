@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { useChatHistory } from "$lib/appState.svelte";
+  import { useChat, useChatHistory } from "$lib/appState.svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { History, PanelLeftClose, PanelLeftOpen, Plus, Settings } from "lucide-svelte";
 
   let { open = $bindable(false), toggleConfig }: { open?: boolean; toggleConfig: () => void } = $props();
   const chatHistory = useChatHistory();
+  const chat = useChat();
 </script>
 
 <Sidebar.Provider style="--sidebar-width: 360px" class="flex w-fit z-10" {open}>
@@ -27,7 +28,12 @@
           <Sidebar.MenuButton>
             {#snippet tooltipContent()}New chat{/snippet}
             {#snippet child({ props })}
-              <Button href="/" {...props} class="max-w-full group-data-[collapsible=icon]:h-8">
+              <Button
+                href="/"
+                {...props}
+                class="max-w-full group-data-[collapsible=icon]:h-8"
+                onclick={() => chat.reset()}
+              >
                 <Plus />
                 <span class="group-data-[collapsible=icon]:hidden">New Chat</span>
               </Button>
