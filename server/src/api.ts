@@ -10,10 +10,10 @@ import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
 
 import { Host } from "./host.js";
+import { validatePath } from "./mcpTools/mcpFilesystem.js";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { log } from "./utils/logger.js";
-import { validatePath } from "./mcpTools/mcpFilesystem.js";
 
 let host: Host;
 const app = new Hono();
@@ -157,6 +157,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const relativePathToScript = path.relative(process.cwd(), __dirname);
 
 app.get("/", serveStatic({ path: `${relativePathToScript}/web/index.html` }));
+app.get("/chat/*", serveStatic({ path: `${relativePathToScript}/web/index.html` }));
 app.get("/favicon.png", serveStatic({ path: `${relativePathToScript}/web/favicon.png` }));
 app.use(
   "/_app/*",
