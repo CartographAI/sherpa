@@ -4,6 +4,13 @@
 
 **Chat with any codebase with a single command.**
 
+<div align="center">
+
+![sherpa](https://github.com/user-attachments/assets/338aeefa-80f0-4124-9623-4cddb128b95f)
+<figcaption>Asking Sherpa about itself</figcaption>
+
+</div>
+
 ## Features
 
 -   **Intelligent Code Analysis:** Sherpa intelligently determines which files to read to answer your questions about a codebase. It uses a combination of tools to understand the project structure and content.
