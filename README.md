@@ -1,10 +1,13 @@
-# Sherpa
+<div align="center">
+<img src="https://github.com/user-attachments/assets/27d259d3-f8a9-4200-ae5e-4410f5135bd2" alt="Sherpa" width="200">
 
-`npx @cartographai/sherpa`
+# Sherpa, your friendly codebase guide
+
+`npx @cartographai/sherpa <folder or git url>`
 
 **Chat with any codebase with a single command.**
 
-<div align="center">
+<br>
 
 ![sherpa](https://github.com/user-attachments/assets/338aeefa-80f0-4124-9623-4cddb128b95f)
 <figcaption>Asking Sherpa about itself</figcaption>
