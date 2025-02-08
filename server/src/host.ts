@@ -75,6 +75,63 @@ export class Host {
     }
   }
 
+  private async processToolCalls(toolCalls: ToolCallPart[]): Promise<CoreToolMessage> {
+    const toolResults = await Promise.all(
+      toolCalls.map(async (toolCall) => {
+        const { toolName, args, toolCallId } = toolCall;
+        const client = this.toolsToClientMap[toolName];
+
+        if (!client) {
+          throw new Error(`Tool ${toolName} not found`);
+        }
+
+        log.debug(`[Calling tool ${toolName} with args ${JSON.stringify(args)}]`);
+        const toolResult = await client.callTool(toolName, args);
+
+        return {
+          type: "tool-result",
+          toolCallId,
+          toolName,
+          result: toolResult.content[0].text,
+        } as ToolResultPart;
+      }),
+    );
+
+    return {
+      role: "tool",
+      content: toolResults,
+    };
+  }
+
+  private createInitialToolCallMessage(filePaths: string[]): CoreMessage {
+    const toolName = filePaths?.length ? "read_files" : "tree";
+    const toolCallId = `0_${toolName}`;
+    let args: any = {};
+
+    if (toolName === "tree") {
+      args = {
+        path: ".",
+        maxDepth: 3,
+      };
+    } else if (toolName === "read_files" && filePaths) {
+      args = {
+        paths: filePaths,
+      };
+    }
+
+    return {
+      role: "assistant" as const,
+      content: [
+        {
+          type: "tool-call" as const,
+          toolCallId,
+          toolName,
+          args,
+        },
+      ],
+    };
+  }
+
   async processQuery({
     systemPrompt,
     userPrompt,
@@ -100,102 +157,40 @@ export class Host {
     log.debug("systemPrompt :>>", systemPrompt);
 
     let currentMessages = [...previousMessages];
-    if (systemPrompt && currentMessages.length === 0)
+    if (systemPrompt && currentMessages.length === 0) {
       currentMessages.push({ role: "system" as const, content: systemPrompt });
+    }
     const userMessage = { role: "user" as const, content: userPrompt };
     currentMessages.push(userMessage);
     onMessage(userMessage);
 
-    // Process all tool calls and LLM responses
-    const processToolCalls = async (toolCalls: ToolCallPart[], addToMessages: boolean = true) => {
-      if (!toolCalls.length) return null;
-
-      const toolResults = await Promise.all(
-        toolCalls.map(async (toolCall) => {
-          const { toolName, args, toolCallId } = toolCall;
-          const client = this.toolsToClientMap[toolName];
-
-          if (!client) {
-            throw new Error(`Tool ${toolName} not found`);
-          }
-
-          log.debug(`[Calling tool ${toolName} with args ${JSON.stringify(args)}]`);
-          const toolResult = await client.callTool(toolName, args);
-
-          return {
-            type: "tool-result",
-            toolCallId,
-            toolName,
-            result: toolResult.content[0].text,
-          } as ToolResultPart;
-        }),
-      );
-
-      const toolMessage: CoreToolMessage = {
-        role: "tool",
-        content: toolResults,
-      };
-
-      log.debug("toolMessage :>>", toolMessage);
-      if (addToMessages) {
-        currentMessages.push(toolMessage);
-        onMessage(toolMessage);
-      }
-
-      return toolMessage;
-    };
-
-    // only force tool call for the first message in chat
-    // length === 2 (system + user)
-    if (currentMessages.length === 2) {
-      if (userFiles.length > 0) {
-        const userFilesToolCall = {
-          role: "assistant" as const,
-          content: [
-            {
-              type: "tool-call" as const,
-              toolCallId: "0_read_files",
-              toolName: "read_files",
-              args: {
-                paths: userFiles,
-              },
-            },
-          ],
-        };
-        currentMessages.push(userFilesToolCall);
-        onMessage(userFilesToolCall);
-      } else {
-        const initialTreeToolCall = {
-          role: "assistant" as const,
-          content: [
-            {
-              type: "tool-call" as const,
-              toolCallId: "0_tree",
-              toolName: "tree",
-              args: {
-                path: ".",
-                maxDepth: 3,
-              },
-            },
-          ],
-        };
-        currentMessages.push(initialTreeToolCall);
-        onMessage(initialTreeToolCall);
-      }
+    // If this is the first message of chat, add a forced initial tool call.
+    // Check length 2 for system + user message
+    if (currentMessages.length <= 2) {
+      const initialToolCall = this.createInitialToolCallMessage(userFiles);
+      currentMessages.push(initialToolCall);
+      onMessage(initialToolCall);
     }
 
     // Main conversation loop
     while (true) {
       // Process any pending tool calls from the last message
       const lastMessage = currentMessages[currentMessages.length - 1];
-      if (lastMessage.role === "assistant" && Array.isArray(lastMessage.content)) {
-        const toolCalls = lastMessage.content.filter((content) => content.type === "tool-call");
+      if (lastMessage.role === "assistant") {
+        const toolCalls = Array.isArray(lastMessage.content)
+          ? lastMessage.content.filter((content) => content.type === "tool-call")
+          : [];
 
-        await processToolCalls(toolCalls);
-      }
-      // Break if the last message is from the assistant and doesn't contain tool calls
-      if (lastMessage.role === "assistant" && !Array.isArray(lastMessage.content)) {
-        break;
+        // Break if the last message is from the assistant and doesn't contain tool calls
+        if (toolCalls.length === 0) {
+          break;
+        }
+
+        // Process all tool calls and LLM responses
+        const toolResulMessage = await this.processToolCalls(toolCalls);
+        log.debug("toolResulMessage :>>", toolResulMessage);
+        currentMessages.push(toolResulMessage);
+        onMessage(toolResulMessage);
       }
 
       // Get LLM response
@@ -216,12 +211,11 @@ export class Host {
       currentMessages.push(...assistantMessages);
       assistantMessages.forEach(onMessage);
 
-      // Process any tool calls from the LLM
+      // Break if there are no tool calls
       const llmToolCalls = await result.toolCalls;
-      if (!llmToolCalls?.length) {
+      if (!llmToolCalls.length) {
         break;
       }
-      await processToolCalls(llmToolCalls);
     }
 
     log.debug("all messages :>>", currentMessages);
