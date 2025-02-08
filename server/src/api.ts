@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { CoreMessage } from "ai";
+import { AISDKError, CoreMessage } from "ai";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -35,11 +35,19 @@ async function sendMessageToClient(clientId: string, data: CoreMessage) {
 }
 
 async function sendTextStreamToClient(clientId: string, stream: AsyncIterable<string>) {
-  for await (const textPart of stream) {
-    await clients[clientId].stream.writeSSE({
-      data: textPart,
-      event: "stream",
-    });
+  try {
+    for await (const textPart of stream) {
+      await clients[clientId].stream.writeSSE({
+        data: textPart,
+        event: "stream",
+      });
+    }
+  } catch (error) {
+    if (AISDKError.isInstance(error)) {
+      log.error("AISDKError when consuming stream:", error.message);
+    } else {
+      log.error("Unexpected error when consuming stream:", error);
+    }
   }
 }
 

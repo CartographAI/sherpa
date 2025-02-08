@@ -3,6 +3,7 @@ import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  AISDKError,
   jsonSchema,
   streamText,
   ToolCallPart,
@@ -201,9 +202,26 @@ export class Host {
         maxSteps: 20,
         messages: currentMessages,
         tools: this.toolsForModel,
+        onError: async ({ error }) => {
+          // We need to listen for and throw the error, else the textStream will just close silently and the result won't finish
+          throw error;
+        },
       });
 
       onTextStream(result.textStream);
+      // Consume the stream to ensure it runs to completion and throws any errors
+      try {
+        await result.consumeStream();
+      } catch (error) {
+        log.debug("streamText consumeStream error:", error);
+        if (AISDKError.isInstance(error)) {
+          throw new Error(error.message);
+        } else {
+          throw error;
+        }
+        throw new Error();
+      }
+
       const assistantMessages = (await result.response).messages;
       log.debug("assistantMessages :>>", assistantMessages);
 
