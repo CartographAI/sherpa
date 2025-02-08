@@ -28,19 +28,27 @@ app.get("/api/health", (c) => c.json({ ok: true }));
 const clients: Record<string, { stream: SSEStreamingApi }> = {};
 
 async function sendMessageToClient(clientId: string, data: CoreMessage) {
-  await clients[clientId].stream.writeSSE({
-    data: JSON.stringify(data),
-    event: "message",
-  });
+  try {
+    if (clientId in clients) {
+      await clients[clientId].stream.writeSSE({
+        data: JSON.stringify(data),
+        event: "message",
+      });
+    }
+  } catch (error) {
+    log.error("Error sending SSE message to client:", error);
+  }
 }
 
 async function sendTextStreamToClient(clientId: string, stream: AsyncIterable<string>) {
   try {
     for await (const textPart of stream) {
-      await clients[clientId].stream.writeSSE({
-        data: textPart,
-        event: "stream",
-      });
+      if (clientId in clients) {
+        await clients[clientId].stream.writeSSE({
+          data: textPart,
+          event: "stream",
+        });
+      }
     }
   } catch (error) {
     if (AISDKError.isInstance(error)) {
