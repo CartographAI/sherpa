@@ -126,6 +126,66 @@ app.get("/api/tree", async (c) => {
   }
 });
 
+app.get("/api/file-tokens", async (c) => {
+  try {
+    const client = host.toolsToClientMap["list_allowed_directories"];
+    if (!client) {
+      return c.json({ error: "Tool not available" }, 500);
+    }
+
+    // Get and parse the 'paths' query parameter
+    const pathsParam = c.req.query("paths");
+    if (!pathsParam) {
+      return c.json({ error: "Paths parameter is required" }, 400);
+    }
+    let filePaths: string[];
+    try {
+      filePaths = JSON.parse(pathsParam);
+    } catch (error) {
+      return c.json({ error: "Invalid paths parameter.  Must be a JSON array of strings." }, 400);
+    }
+
+    if (!Array.isArray(filePaths)) {
+      return c.json({ error: "Invalid paths parameter. Must be an array." }, 400);
+    }
+
+    const listAllowedDirectoriesResult = await client.callTool("list_allowed_directories", {});
+    const allowedDirectory = (listAllowedDirectoriesResult.content[0].text as string).replace(
+      "Allowed directory:\n",
+      "",
+    );
+
+    // Validate each path (optional, but good practice)
+    for (const filePath of filePaths) {
+      const absolutePath = path.resolve(allowedDirectory, filePath);
+      await validatePath(absolutePath, allowedDirectory); // Throws if invalid
+    }
+
+    const readFilesClient = host.toolsToClientMap["read_files"];
+    if (!readFilesClient) {
+      return c.json({ error: "read_files tool not available" }, 500);
+    }
+
+    // Call read_files with the provided paths
+    const readFilesResult = await readFilesClient.callTool("read_files", { paths: filePaths });
+
+    let totalTokens = 0;
+    for (const fileContent of readFilesResult.content) {
+      if (fileContent.type === "text") {
+        const textContent = fileContent.text;
+        totalTokens += textContent.length;
+      }
+    }
+
+    totalTokens = Math.round(totalTokens / 4);
+
+    return c.json({ count: totalTokens });
+  } catch (error) {
+    log.error("Error getting file tokens:", error);
+    return c.json({ error: "Failed to get file tokens" }, 500);
+  }
+});
+
 app.post("/api/chat/:chatId", async (c) => {
   const chatId = c.req.param("chatId");
   if (!chatId) return c.json({ error: "Chat ID is required" }, 400);
