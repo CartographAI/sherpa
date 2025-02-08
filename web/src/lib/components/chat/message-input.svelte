@@ -8,7 +8,7 @@
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { getNameForModelId, modelConfig } from "$lib/config";
 
-  let { handleSubmit }: { handleSubmit: () => void } = $props();
+  let { handleSubmit, totalFileTokens }: { handleSubmit: () => void, totalFileTokens: number | null } = $props();
 
   const chat = useChat();
   const modelSelectContent = $derived(getNameForModelId(chat.selectedModel) ?? "Select a model");
@@ -65,7 +65,10 @@
         <Tooltip.Trigger>
           <div class="flex items-center gap-2">
             <Label for="readFiles">Read all files</Label>
-            <Switch bind:checked={chat.sendFiles} id="readFiles" />
+            <Switch  id="readFiles" bind:checked={chat.sendFiles}/>
+             {#if chat.sendFiles && totalFileTokens !== null}
+              <span class="text-sm text-muted-foreground">(~ {totalFileTokens} tokens)</span>
+            {/if}
           </div>
         </Tooltip.Trigger>
         <Tooltip.Content>

@@ -14,6 +14,7 @@
   let isLoading: boolean = $state(false);
   let openPanel: "config" | null = $state(null);
   let fileTree: any = $state(null);
+  let totalFileTokens: number | null = $state(null);
 
   const { chatId }: { chatId?: string } = $props();
 
@@ -126,9 +127,26 @@
     }
   }
 
-  onMount(() => {
-    getWorkingDirectory();
-    fetchFileTree()
+  async function fetchFileTokens(filePaths: string[]) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/file-tokens?paths=${encodeURIComponent(JSON.stringify(filePaths))}`,
+      );
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      const data = await response.json();
+      totalFileTokens = data.count;
+    } catch (error) {
+      console.error("Error fetching file tokens:", error);
+      toast.error("Failed to fetch file tokens", { position: "top-center" });
+    }
+  }
+
+  onMount(async () => {
+    await getWorkingDirectory();
+    await fetchFileTree();
+    fetchFileTokens([]); // Initialize with empty array
   });
 
   $effect(() => {
@@ -226,6 +244,30 @@
       toast.error("An error occurred, please refresh the page and try again", { position: "top-center" });
     }
   }
+
+  // Call fetchFileTokens when sendFiles changes
+  $effect(() => {
+    if (chat.sendFiles && fileTree) {
+      let files: string[] = [];
+      function getAllPaths(node) {
+        // Base case: if it's a file, add its path
+        if (node.type === "file") {
+          files.push(node.path);
+        }
+
+        // If the node has children, recursively process them
+        if (node.children && Array.isArray(node.children)) {
+          for (const child of node.children) {
+            getAllPaths(child);
+          }
+        }
+      }
+      getAllPaths(fileTree);
+      fetchFileTokens(files);
+    } else {
+      totalFileTokens = null;
+    }
+  });
 </script>
 
 <div class="flex gap-2">
@@ -259,7 +301,7 @@
     {/if}
 
     {#if currentAllowedDirectory === chat.workingDirectory}
-      <MessageInput handleSubmit={sendMessage} />
+      <MessageInput handleSubmit={sendMessage} {totalFileTokens} />
     {:else}
       <div class="flex gap-2">
         <CircleAlert />
