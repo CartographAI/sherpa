@@ -115,6 +115,7 @@ export async function createServer(allowedDirectory: string) {
           description:
             "Read the contents of one or more multiple files. " +
             "Use this to analyze file contents. " +
+            "Make sure you have evidence that this file exists, by using tree" +
             "Each file's content is returned with its path as a reference. " +
             "Failed reads for individual files won't stop " +
             "the entire operation.",
@@ -125,6 +126,7 @@ export async function createServer(allowedDirectory: string) {
           description:
             "Generate a tree-style visualization of a directory structure. " +
             "Shows the hierarchy of files and directories in a readable format. " +
+            "Tree can also be called on a sub directory." +
             "Use this to understand what files are available. " +
             "Optionally specify maxDepth to limit the depth of the tree. ",
           inputSchema: zodToJsonSchema(TreeArgsSchema) as ToolInput,
