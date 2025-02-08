@@ -13,6 +13,7 @@
 
   let isLoading: boolean = $state(false);
   let openPanel: "config" | null = $state(null);
+  let fileTree: any = $state(null);
 
   const { chatId }: { chatId?: string } = $props();
 
@@ -112,8 +113,22 @@
     if (!chat.workingDirectory) chat.workingDirectory = directory;
   }
 
+  async function fetchFileTree() {
+    if (!chat.workingDirectory) return;
+
+    try {
+      const treeResponse = await fetch(API_BASE_URL + `/api/tree?path=${encodeURIComponent(chat.workingDirectory)}`);
+      const { tree } = await treeResponse.json();
+      fileTree = tree;
+    } catch (error) {
+      console.error("Error fetching file tree:", error);
+      toast.error("Failed to fetch file tree", { position: "top-center" });
+    }
+  }
+
   onMount(() => {
     getWorkingDirectory();
+    fetchFileTree()
   });
 
   $effect(() => {
@@ -161,11 +176,6 @@
     let files: string[] = [];
     if (chat.sendFiles) {
       try {
-        if (!chat.workingDirectory) throw new Error("No working directory");
-
-        const treeResponse = await fetch(API_BASE_URL + `/api/tree?path=${encodeURIComponent(chat.workingDirectory)}`);
-        const { tree } = await treeResponse.json();
-
         function getAllPaths(node) {
           // Base case: if it's a file, add its path
           if (node.type === "file") {
@@ -179,7 +189,7 @@
             }
           }
         }
-        getAllPaths(tree);
+        getAllPaths(fileTree);
       } catch (error) {
         console.error("Error fetching file tree:", error);
         toast.error("Failed to fetch file tree", { position: "top-center" });
