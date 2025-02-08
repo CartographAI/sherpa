@@ -224,6 +224,7 @@
     };
     const inputMessageCopy = chat.inputMessage;
     chat.inputMessage = "";
+    let errorMessage: string | null = null;
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat/${chat.id}`, {
         method: "POST",
@@ -233,15 +234,21 @@
       isLoading = false;
       if (response.status === 202) {
       } else {
-        chat.inputMessage = inputMessageCopy;
         const resJson = await response.json();
-        toast.error("An error occurred: " + resJson.message, { position: "top-center" });
+        errorMessage = "An error occurred: " + resJson.message;
       }
     } catch (error) {
       isLoading = false;
-      chat.inputMessage = inputMessageCopy;
       console.error("Error making POST /api/chat call:", error);
-      toast.error("An error occurred, please refresh the page and try again", { position: "top-center" });
+      errorMessage = "An error occurred, please refresh the page and try again";
+    }
+    if (errorMessage !== null) {
+      toast.error(errorMessage, { position: "top-center" });
+      // Try to reset chat state to before POST call
+      if (chat.messages.length && chat.messages[chat.messages.length - 1].role === "user") {
+        chat.messages = chat.messages.slice(0, chat.messages.length - 1);
+        chat.inputMessage = inputMessageCopy;
+      }
     }
   }
 
