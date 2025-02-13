@@ -230,19 +230,12 @@ app.post("/api/chat/:chatId", async (c) => {
 // where this file is being executed from. This finds the relative path from the working directory
 // to the parent folder of this file, then we can use it to point to the web build files.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-log.debug("dirname", __dirname);
 const relativePathToScript = path.relative(process.cwd(), __dirname);
-log.debug("relativePathToScript", relativePathToScript);
 
-app.get("/", serveStatic({ path: `${relativePathToScript}/web/index.html` }));
-app.get("/chat/*", serveStatic({ path: `${relativePathToScript}/web/index.html` }));
-app.get("/favicon.png", serveStatic({ path: `${relativePathToScript}/web/favicon.png` }));
-app.use(
-  "/_app/*",
-  serveStatic({
-    root: `${relativePathToScript}/web`,
-  }),
-);
+app.get("/", serveStatic({ root: relativePathToScript, path: "web/index.html" }));
+app.get("/chat/*", serveStatic({ root: relativePathToScript, path: "web/index.html" }));
+app.get("/favicon.png", serveStatic({ root: relativePathToScript, path: "web/favicon.png" }));
+app.use("/_app/*", serveStatic({ root: `${relativePathToScript}/web` }));
 
 export function serveApi(setHost: Host) {
   host = setHost;
