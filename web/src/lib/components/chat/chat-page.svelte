@@ -243,7 +243,7 @@
       errorMessage = "An error occurred, please refresh the page and try again";
     }
     if (errorMessage !== null) {
-      toast.error(errorMessage, { position: "top-center" });
+      toast.error(errorMessage, { position: "top-center", duration: 12000 });
       // Try to reset chat state to before POST call
       if (chat.messages.length && chat.messages[chat.messages.length - 1].role === "user") {
         chat.messages = chat.messages.slice(0, chat.messages.length - 1);
