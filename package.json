@@ -1,6 +1,6 @@
 {
   "name": "@cartographai/sherpa",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "./dist/index.js",
   "devDependencies": {
     "concurrently": "^8.2.2",
