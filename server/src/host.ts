@@ -15,6 +15,8 @@ import {
 } from "ai";
 import type { BaseClient } from "./mcpTools/baseClient.js";
 import { createFilesystemClient } from "./mcpTools/filesystemClient.js";
+import { MCPClientFactory } from "./mcpTools/mcpClientFactory.js";
+import config from "./mcpTools/mcpServersConfig.js";
 import { log } from "./utils/logger.js";
 
 export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
@@ -61,9 +63,15 @@ export class Host {
   }
 
   async createClientsServers(allowedDirectory: string): Promise<void> {
-    const client = await createFilesystemClient(allowedDirectory);
-    this.clients.push(client);
+    // Create filesystem client (special handling as it uses InMemoryTransport)
+    const filesystemClient = await createFilesystemClient(allowedDirectory);
+    this.clients.push(filesystemClient);
 
+    // Create additional MCP clients from MCPClientFactory
+    const stdioClients = await MCPClientFactory.createClients(config);
+    this.clients.push(...stdioClients);
+
+    // Consolidate tools from all clients into a flattened array for passing to the model
     for (const client of this.clients) {
       const toolsResponse = await client.listTools();
       for (const tool of toolsResponse.tools) {
