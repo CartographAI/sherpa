@@ -7,8 +7,7 @@ import { serveApi } from "./api.js";
 import { createHost } from "./host.js";
 import { cloneRepository, isGitUrl } from "./utils/git.js";
 import { log } from "./utils/logger.js";
-
-const cacheDirectory = path.join(os.homedir(), ".cache", "sherpa");
+import { cacheDirectory } from "./config.js";
 
 async function main() {
   const args = process.argv.slice(2);
