@@ -1,7 +1,8 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { configDirectory, mcpConfigPath } from "../config.js";
 import { log } from "../utils/logger.js";
-import { MCPClientFactory } from "./mcpClientFactory.js";
+import type { BaseClient } from "./baseClient.js";
+import { StdioClient } from "./stdioClient.js";
 
 export interface McpServerConfig {
   command: string;
@@ -17,8 +18,42 @@ const defaultMcpConfig: McpServersConfig = { mcpServers: {} };
 
 export async function createClients() {
   const mcpConfig = await loadMcpConfig();
-  const stdioClients = await MCPClientFactory.createClients(mcpConfig);
+  const stdioClients = await createAllClients(mcpConfig);
   return stdioClients;
+}
+
+/**
+ * Creates and initializes a single MCP client
+ * @param serverName Name of the MCP server
+ * @param config Configuration for the MCP server
+ * @returns Initialized BaseClient instance
+ */
+async function createClient(serverName: string, config: McpServerConfig): Promise<BaseClient> {
+  log.debug(`Creating client for ${serverName}`);
+  const client = new StdioClient(serverName, config);
+  await client.connect();
+  return client;
+}
+
+/**
+ * Creates MCP clients for all configured servers
+ * @param config The MCP servers configuration
+ * @returns Array of initialized BaseClient instances
+ */
+async function createAllClients(config: McpServersConfig): Promise<BaseClient[]> {
+  const clients: BaseClient[] = [];
+
+  for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
+    try {
+      const client = await createClient(serverName, serverConfig);
+      clients.push(client);
+    } catch (error) {
+      log.error(`Failed to create client for ${serverName}:`, error);
+      // Continue with other clients even if one fails
+    }
+  }
+
+  return clients;
 }
 
 /**
