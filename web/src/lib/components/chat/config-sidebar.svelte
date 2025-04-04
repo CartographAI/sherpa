@@ -9,31 +9,44 @@
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
+  // Define a type for the expected server status object
+  type McpServerDisplayInfo = {
+    name: string;
+    status: "connected" | "failed" | "pending";
+    error?: string;
+  };
+
   let { open = $bindable(true) }: { open?: boolean } = $props();
   const config = useConfig();
-  let mcpServerNames: string[] = $state([]);
-  let isLoadingMcpConfig = $state(false); // Start as false, set true during fetch
+  let mcpServers: McpServerDisplayInfo[] = $state([]);
+  let isLoadingMcpConfig = $state(false);
   let loadError: string | null = $state(null);
 
   async function fetchMcpConfig() {
     isLoadingMcpConfig = true;
     loadError = null;
+    mcpServers = [];
     try {
       const response = await fetch(`${API_BASE_URL}/api/mcp-config`);
       if (!response.ok) {
         throw new Error(`Failed to fetch MCP config: ${response.statusText}`);
       }
-      const data = await response.json();
-      if (data && data.mcpServers) {
-        mcpServerNames = Object.keys(data.mcpServers);
+      const data: { mcpServers: Record<string, any> } = await response.json();
+
+      if (data && typeof data.mcpServers === "object" && data.mcpServers !== null) {
+        mcpServers = Object.entries(data.mcpServers).map(([name, serverData]) => ({
+          name: name,
+          status: serverData.status ?? "failed",
+          error: serverData.error,
+        }));
       } else {
-        mcpServerNames = []; // Ensure it's an empty array if structure is unexpected
+        mcpServers = [];
       }
       loadError = null;
     } catch (error) {
       console.error("Error loading MCP config:", error);
       loadError = "Could not load MCP server configuration.";
-      mcpServerNames = []; // Clear any potentially stale data
+      mcpServers = [];
       toast.error(loadError, { position: "top-center" });
     } finally {
       isLoadingMcpConfig = false;
@@ -41,7 +54,7 @@
   }
 
   onMount(async () => {
-    await fetchMcpConfig(); // Call the fetch function on mount
+    await fetchMcpConfig();
   });
 </script>
 
@@ -138,15 +151,24 @@
       <p class="text-muted-foreground text-xs pt-1">
         Configuration file located at <code class="font-mono">~/.config/sherpa/mcp_servers.json</code>
       </p>
-      {#if isLoadingMcpConfig && mcpServerNames.length === 0}
+      {#if isLoadingMcpConfig && mcpServers.length === 0}
         <!-- Show loading only if list is empty, otherwise show stale list while loading -->
         <div class="text-muted-foreground text-sm pt-2">Loading...</div>
       {:else if loadError}
         <div class="text-destructive text-sm pt-2">{loadError}</div>
-      {:else if mcpServerNames.length > 0}
+      {:else if mcpServers.length > 0}
         <div class="space-y-1 pt-2">
-          {#each mcpServerNames as name}
-            <div class="text-sm text-muted-foreground">{name}</div>
+          {#each mcpServers as server}
+            <div class="flex items-center justify-between text-sm" title={server.error ?? ""}>
+              <span class="text-muted-foreground truncate pr-2">{server.name}</span>
+              {#if server.status === "connected"}
+                <span class="text-green-500 text-xs font-medium">Connected</span>
+              {:else if server.status === "failed"}
+                <span class="text-red-500 text-xs font-medium">Failed</span>
+              {:else if server.status === "pending"}
+                <span class="text-yellow-500 text-xs font-medium">Pending</span>
+              {/if}
+            </div>
           {/each}
         </div>
       {:else if !isLoadingMcpConfig}

@@ -10,7 +10,7 @@ import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
 
 import { Host } from "./host.js";
-import { loadMcpConfig } from "./mcpTools/mcpManager.js";
+import { mcpManager } from "./mcpTools/mcpManager.js"; // Import the singleton instance
 import { validatePath } from "./mcpTools/mcpFilesystem.js";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
@@ -112,14 +112,15 @@ app.get("/api/tree", async (c) => {
   }
 });
 
-// Endpoint to get MCP server configuration
-app.get("/api/mcp-config", async (c) => {
+// Endpoint to get MCP server configuration with status
+app.get("/api/mcp-config", (c) => {
   try {
-    // Use the centralized function to load the config
-    const config = await loadMcpConfig();
-    return c.json(config);
+    // Use the manager instance to get the config with status
+    const configWithStatus = mcpManager.getConfigWithStatus();
+    return c.json(configWithStatus);
   } catch (error) {
-    // loadMcpConfig handles logging, just return error response
+    // getConfigWithStatus might throw if called before init, though unlikely here
+    // It also handles internal logging
     return c.json({ error: "Failed to load MCP configuration" }, 500);
   }
 });
