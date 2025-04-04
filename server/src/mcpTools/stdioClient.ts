@@ -4,13 +4,13 @@ import { CreateMessageRequestSchema, ProgressNotificationSchema } from "@modelco
 
 import { log } from "../utils/logger.js";
 import { BaseClient } from "./baseClient.js";
-import type { MCPServerConfig } from "./mcpServersConfig.js";
+import type { McpServerConfig } from "./mcpManager.js";
 
 export class StdioClient extends BaseClient {
-  private config: MCPServerConfig;
+  private config: McpServerConfig;
   private clientName: string;
 
-  constructor(serverName: string, config: MCPServerConfig) {
+  constructor(serverName: string, config: McpServerConfig) {
     super();
     this.config = config;
     this.clientName = `mcp-${serverName}-client`;

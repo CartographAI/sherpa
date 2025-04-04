@@ -1,6 +1,6 @@
 import { log } from "../utils/logger.js";
 import type { BaseClient } from "./baseClient.js";
-import type { MCPServerConfig, MCPServersConfig } from "./mcpServersConfig.js";
+import { McpServerConfig, McpServersConfig } from "./mcpManager.js";
 import { StdioClient } from "./stdioClient.js";
 
 export class MCPClientFactory {
@@ -9,7 +9,7 @@ export class MCPClientFactory {
    * @param config The MCP servers configuration
    * @returns Array of initialized BaseClient instances
    */
-  static async createClients(config: MCPServersConfig): Promise<BaseClient[]> {
+  static async createClients(config: McpServersConfig): Promise<BaseClient[]> {
     const clients: BaseClient[] = [];
 
     for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
@@ -31,7 +31,7 @@ export class MCPClientFactory {
    * @param config Configuration for the MCP server
    * @returns Initialized BaseClient instance
    */
-  private static async createClient(serverName: string, config: MCPServerConfig): Promise<BaseClient> {
+  private static async createClient(serverName: string, config: McpServerConfig): Promise<BaseClient> {
     log.debug(`Creating client for ${serverName}`);
     const client = new StdioClient(serverName, config);
     await client.connect();

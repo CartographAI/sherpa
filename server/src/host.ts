@@ -14,10 +14,12 @@ import {
   type ToolResultPart,
 } from "ai";
 import type { BaseClient } from "./mcpTools/baseClient.js";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createFilesystemClient } from "./mcpTools/filesystemClient.js";
-import { MCPClientFactory } from "./mcpTools/mcpClientFactory.js";
-import config from "./mcpTools/mcpServersConfig.js";
+import { MCPClientFactory, type MCPServersConfig } from "./mcpTools/mcpClientFactory.js";
 import { log } from "./utils/logger.js";
+import { configDirectory, mcpConfigPath } from "./config.js";
+import { createClients, loadMcpConfig } from "./mcpTools/mcpManager.js";
 
 export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
   const host = new Host();
@@ -67,8 +69,7 @@ export class Host {
     const filesystemClient = await createFilesystemClient(allowedDirectory);
     this.clients.push(filesystemClient);
 
-    // Create additional MCP clients from MCPClientFactory
-    const stdioClients = await MCPClientFactory.createClients(config);
+    const stdioClients = await createClients();
     this.clients.push(...stdioClients);
 
     // Consolidate tools from all clients into a flattened array for passing to the model
