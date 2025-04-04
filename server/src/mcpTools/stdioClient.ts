@@ -17,7 +17,6 @@ export class StdioClient extends BaseClient {
   }
 
   async connect(): Promise<void> {
-    console.log("this.config :>> ", this.config);
     const transport = new StdioClientTransport({
       command: this.config.command,
       args: this.config.args,

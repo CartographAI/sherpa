@@ -4,22 +4,19 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   AISDKError,
-  jsonSchema,
-  streamText,
-  ToolCallPart,
   type CoreMessage,
   type CoreTool,
   type CoreToolMessage,
   type LanguageModelV1,
+  ToolCallPart,
   type ToolResultPart,
+  jsonSchema,
+  streamText,
 } from "ai";
 import type { BaseClient } from "./mcpTools/baseClient.js";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createFilesystemClient } from "./mcpTools/filesystemClient.js";
-import { MCPClientFactory, type MCPServersConfig } from "./mcpTools/mcpClientFactory.js";
+import { createClients } from "./mcpTools/mcpManager.js";
 import { log } from "./utils/logger.js";
-import { configDirectory, mcpConfigPath } from "./config.js";
-import { createClients, loadMcpConfig } from "./mcpTools/mcpManager.js";
 
 export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
   const host = new Host();

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import os from "node:os";
-import path from "node:path";
 import open from "open";
 import { serveApi } from "./api.js";
 import { createHost } from "./host.js";
