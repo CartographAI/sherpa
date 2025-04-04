@@ -10,6 +10,7 @@ import { logger } from "hono/logger";
 import { SSEStreamingApi, streamSSE } from "hono/streaming";
 
 import { Host } from "./host.js";
+import { loadMcpConfig } from "./mcpTools/mcpManager.js";
 import { validatePath } from "./mcpTools/mcpFilesystem.js";
 import { TreeGenerator, TreeNode } from "./mcpTools/tree.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
@@ -96,7 +97,7 @@ app.get("/api/events/:chatId", (c) => {
   });
 });
 
-app.get("/api/directory", async (c) => {
+app.get("/api/tree", async (c) => {
   try {
     const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
@@ -111,7 +112,19 @@ app.get("/api/directory", async (c) => {
   }
 });
 
-app.get("/api/tree", async (c) => {
+// Endpoint to get MCP server configuration
+app.get("/api/mcp-config", async (c) => {
+  try {
+    // Use the centralized function to load the config
+    const config = await loadMcpConfig();
+    return c.json(config);
+  } catch (error) {
+    // loadMcpConfig handles logging, just return error response
+    return c.json({ error: "Failed to load MCP configuration" }, 500);
+  }
+});
+
+app.get("/api/directory", async (c) => {
   try {
     const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
