@@ -15,7 +15,7 @@ import {
 } from "ai";
 import type { BaseClient } from "./mcpTools/baseClient.js";
 import { createFilesystemClient } from "./mcpTools/filesystemClient.js";
-import { createClients } from "./mcpTools/mcpManager.js";
+import { mcpManager } from "./mcpTools/mcpManager.js"; // Import the singleton instance
 import { log } from "./utils/logger.js";
 
 export async function createHost({ allowedDirectory }: { allowedDirectory: string }) {
@@ -66,8 +66,9 @@ export class Host {
     const filesystemClient = await createFilesystemClient(allowedDirectory);
     this.clients.push(filesystemClient);
 
-    const stdioClients = await createClients();
-    this.clients.push(...stdioClients);
+    // Get connected clients from the manager instance
+    const stdioClientsMap = mcpManager.getConnectedClients();
+    this.clients.push(...Array.from(stdioClientsMap.values())); // Add connected stdio clients
 
     // Consolidate tools from all clients into a flattened array for passing to the model
     for (const client of this.clients) {

@@ -3,6 +3,7 @@
 import open from "open";
 import { serveApi } from "./api.js";
 import { createHost } from "./host.js";
+import { mcpManager } from "./mcpTools/mcpManager.js";
 import { cloneRepository, isGitUrl } from "./utils/git.js";
 import { log } from "./utils/logger.js";
 import { cacheDirectory } from "./config.js";
@@ -30,9 +31,29 @@ async function main() {
     allowedDirectory = urlOrDirectory;
   }
 
+  await mcpManager.initialize();
+
   const host = await createHost({ allowedDirectory });
   serveApi(host);
   await open("http://localhost:3031");
+
+  // Graceful shutdown
+  process.on("SIGINT", async () => {
+    log.info("Received SIGINT. Shutting down gracefully...");
+    await mcpManager.cleanup();
+    await host.cleanup(); // Assuming host might have cleanup logic too
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", async () => {
+    log.info("Received SIGTERM. Shutting down gracefully...");
+    await mcpManager.cleanup();
+    await host.cleanup();
+    process.exit(0);
+  });
 }
 
-main();
+main().catch((error) => {
+  log.error("Unhandled error during startup:", error);
+  process.exit(1);
+});
