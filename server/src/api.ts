@@ -97,7 +97,7 @@ app.get("/api/events/:chatId", (c) => {
   });
 });
 
-app.get("/api/tree", async (c) => {
+app.get("/api/directory", async (c) => {
   try {
     const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
@@ -125,7 +125,7 @@ app.get("/api/mcp-config", (c) => {
   }
 });
 
-app.get("/api/directory", async (c) => {
+app.get("/api/tree", async (c) => {
   try {
     const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
