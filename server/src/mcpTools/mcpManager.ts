@@ -15,7 +15,7 @@ interface McpServersConfigFile {
 }
 
 export interface McpServerStatus extends McpServerConfig {
-  status: "connected" | "failed" | "pending";
+  status: "connected" | "error" | "pending";
   error?: string;
 }
 
@@ -92,7 +92,7 @@ class McpManager {
         log.info(`Successfully connected to MCP server: ${serverName}`);
       } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.config.mcpServers[serverName].status = "failed";
+        this.config.mcpServers[serverName].status = "error";
         this.config.mcpServers[serverName].error = errorMessage;
         log.error(`Failed to connect to MCP server ${serverName}:`, errorMessage);
       }
@@ -118,7 +118,7 @@ class McpManager {
 
   /**
    * Returns the full MCP configuration object, augmented with the connection status
-   * ('connected', 'failed', or 'pending' if accessed before init finishes) for each server.
+   * ('connected', 'error', or 'pending' if accessed before init finishes) for each server.
    * Ensures initialization has completed before returning the status.
    * @returns The McpServersStatusConfig object.
    */
