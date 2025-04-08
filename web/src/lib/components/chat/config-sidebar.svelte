@@ -12,7 +12,7 @@
   // Define a type for the expected server status object
   type McpServerDisplayInfo = {
     name: string;
-    status: "connected" | "failed" | "pending";
+    status: "connected" | "error" | "pending";
     error?: string;
   };
 
@@ -36,7 +36,7 @@
       if (data && typeof data.mcpServers === "object" && data.mcpServers !== null) {
         mcpServers = Object.entries(data.mcpServers).map(([name, serverData]) => ({
           name: name,
-          status: serverData.status ?? "failed",
+          status: serverData.status ?? "error",
           error: serverData.error,
         }));
       } else {
@@ -149,7 +149,7 @@
     </div>
     <Sidebar.GroupContent>
       <p class="text-muted-foreground text-xs pt-1">
-        Configuration file located at <code class="font-mono">~/.config/sherpa/mcp_servers.json</code>
+        Configuration file is located at <code class="font-mono">~/.config/sherpa/mcp_servers.json</code>
       </p>
       {#if isLoadingMcpConfig && mcpServers.length === 0}
         <!-- Show loading only if list is empty, otherwise show stale list while loading -->
@@ -163,8 +163,8 @@
               <span class="text-muted-foreground truncate pr-2">{server.name}</span>
               {#if server.status === "connected"}
                 <span class="text-green-500 text-xs font-medium">Connected</span>
-              {:else if server.status === "failed"}
-                <span class="text-red-500 text-xs font-medium">Failed</span>
+              {:else if server.status === "error"}
+                <span class="text-red-500 text-xs font-medium">Error</span>
               {:else if server.status === "pending"}
                 <span class="text-yellow-500 text-xs font-medium">Pending</span>
               {/if}
