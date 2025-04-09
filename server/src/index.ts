@@ -41,7 +41,7 @@ async function main() {
   process.on("SIGINT", async () => {
     log.info("Received SIGINT. Shutting down gracefully...");
     await mcpManager.cleanup();
-    await host.cleanup(); // Assuming host might have cleanup logic too
+    await host.cleanup();
     process.exit(0);
   });
 

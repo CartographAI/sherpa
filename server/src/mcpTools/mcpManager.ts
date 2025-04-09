@@ -30,12 +30,6 @@ class McpManager {
   private connectedClients: Map<string, BaseClient> = new Map();
   private isInitialized = false;
 
-  /**
-   * Loads the MCP server configuration from the JSON file.
-   * Creates a default config file if it doesn't exist.
-   * Returns default (empty) config if reading/parsing fails.
-   * @returns The loaded or default McpServersConfigFile.
-   */
   private async loadMcpConfigFile(): Promise<McpServersConfigFile> {
     try {
       const configFileContent = await readFile(mcpConfigPath, "utf-8");
@@ -104,11 +98,6 @@ class McpManager {
     log.info("MCP Manager initialization complete.");
   }
 
-  /**
-   * Returns a map of successfully connected BaseClient instances.
-   * Ensures initialization has completed before returning clients.
-   * @returns Map<string, BaseClient> of connected clients.
-   */
   getConnectedClients(): Map<string, BaseClient> {
     if (!this.isInitialized) {
       throw new Error("McpManager not initialized. Call initialize() first.");
@@ -116,12 +105,6 @@ class McpManager {
     return this.connectedClients;
   }
 
-  /**
-   * Returns the full MCP configuration object, augmented with the connection status
-   * ('connected', 'error', or 'pending' if accessed before init finishes) for each server.
-   * Ensures initialization has completed before returning the status.
-   * @returns The McpServersStatusConfig object.
-   */
   getConfigWithStatus(): McpServersStatusConfig {
     if (!this.isInitialized && Object.keys(this.config.mcpServers).length === 0) {
       log.warn("getConfigWithStatus called before initialization and config load, returning empty.");
