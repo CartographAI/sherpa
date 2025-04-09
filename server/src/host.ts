@@ -66,11 +66,11 @@ export class Host {
     const filesystemClient = await createFilesystemClient(allowedDirectory);
     this.clients.push(filesystemClient);
 
-    // Get connected clients from the manager instance
+    // Get connected clients from mcpManager
     const stdioClientsMap = mcpManager.getConnectedClients();
-    this.clients.push(...Array.from(stdioClientsMap.values())); // Add connected stdio clients
+    this.clients.push(...Array.from(stdioClientsMap.values()));
 
-    // Consolidate tools from all clients into a flattened array for passing to the model
+    // Consolidate all tools into a flattened array for passing to the model
     for (const client of this.clients) {
       const toolsResponse = await client.listTools();
       for (const tool of toolsResponse.tools) {
