@@ -13,6 +13,7 @@ export const modelConfig = [
     models: [
       { name: "Gemini 2.0 Flash", id: "gemini-2.0-flash" },
       { name: "Gemini 2.0 Pro Experimental", id: "gemini-2.0-pro-exp-02-05" },
+      { name: "Gemini 2.5 Pro Experimental", id: "gemini-2.5-pro-exp-03-25" },
     ],
   },
   {
