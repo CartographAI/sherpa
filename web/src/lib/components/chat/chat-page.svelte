@@ -130,7 +130,14 @@
   async function fetchFileTokens(filePaths: string[]) {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/file-tokens?paths=${encodeURIComponent(JSON.stringify(filePaths))}`,
+        `${API_BASE_URL}/api/file-tokens`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ paths: filePaths }),
+        }
       );
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);

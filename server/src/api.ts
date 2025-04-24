@@ -156,27 +156,18 @@ app.get("/api/tree", async (c) => {
   }
 });
 
-app.get("/api/file-tokens", async (c) => {
+app.post("/api/file-tokens", async (c) => {
   try {
     const client = host.toolsToClientMap["list_allowed_directories"];
     if (!client) {
       return c.json({ error: "Tool not available" }, 500);
     }
 
-    // Get and parse the 'paths' query parameter
-    const pathsParam = c.req.query("paths");
-    if (!pathsParam) {
-      return c.json({ error: "Paths parameter is required" }, 400);
-    }
-    let filePaths: string[];
-    try {
-      filePaths = JSON.parse(pathsParam);
-    } catch (error) {
-      return c.json({ error: "Invalid paths parameter.  Must be a JSON array of strings." }, 400);
-    }
+    // Get paths from the request body
+    const { paths: filePaths } = await c.req.json();
 
-    if (!Array.isArray(filePaths)) {
-      return c.json({ error: "Invalid paths parameter. Must be an array." }, 400);
+    if (!Array.isArray(filePaths) || !filePaths.every((p) => typeof p === "string")) {
+      return c.json({ error: "Invalid paths parameter. Must be an array of strings." }, 400);
     }
 
     const listAllowedDirectoriesResult = await client.callTool("list_allowed_directories", {});
@@ -188,7 +179,7 @@ app.get("/api/file-tokens", async (c) => {
     // Validate each path (optional, but good practice)
     for (const filePath of filePaths) {
       const absolutePath = path.resolve(allowedDirectory, filePath);
-      await validatePath(absolutePath, allowedDirectory); // Throws if invalid
+      await validatePath(absolutePath, allowedDirectory);
     }
 
     const readFilesClient = host.toolsToClientMap["read_files"];
