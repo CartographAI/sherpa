@@ -288,7 +288,7 @@
   <MainSidebar toggleConfig={() => togglePanel("config")} />
 
   <!-- Main chat interface -->
-  <div class="w-full max-w-screen-md mx-auto p-4 mb-4 space-y-6">
+  <div class="w-full max-w-[860px] mx-auto p-4 mb-4 space-y-6">
     {#if chat.messages.length === 0}
       <div class="text-muted-foreground p-2 pt-[10%]">
         Hi there! I'm Sherpa, your friendly codebase guide. 👋<br />

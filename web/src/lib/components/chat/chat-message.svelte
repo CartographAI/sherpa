@@ -37,7 +37,7 @@
 </script>
 
 {#if !shouldSkip}
-  <div class="p-4 rounded-lg flex relative {message.role === 'user' ? 'bg-stone-300' : 'bg-muted/50'}">
+  <div class="py-4 px-6 rounded-lg flex relative {message.role === 'user' ? 'bg-stone-300' : 'bg-muted/50'}">
     {#if message.role === "user"}
       <Avatar class="w-6 h-6 mr-2"><UserRound /></Avatar>
     {/if}
@@ -69,7 +69,7 @@
         variant="ghost"
         size="icon"
         class={cn(
-          'absolute bottom-2 right-2 h-4 w-4 p-4 opacity-50 hover:opacity-100',
+          'absolute bottom-0 right-0 h-4 w-4 p-4 opacity-50 hover:opacity-100',
           'hover:bg-stone-200 dark:hover:bg-stone-700'
         )}
         onclick={() => {
