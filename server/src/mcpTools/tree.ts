@@ -166,6 +166,7 @@ export class TreeGenerator {
 
     // maybe move this to logic that sends all files instead
     ig.add("bun.lock");
+    ig.add("uv.lock");
 
     return ig;
   }
